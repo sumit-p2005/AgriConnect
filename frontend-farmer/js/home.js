@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="muted">${active.centerId?.name || ""}</div>
           ${acBadge(active.status)}
           <div style="margin-top:10px;font-size:14px;" class="muted">
-            🎟️ ${t("your_token")}: <b>#${active.tokenNumber || "-"}</b>
+            <i class="fa-solid fa-ticket" aria-label="token"></i> ${t("your_token")}: <b>#${active.tokenNumber || "-"}</b>
           </div>
         </div>`;
     } else {
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (lot) {
       teaser.innerHTML = `
         <div class="card" onclick="location.href='group.html'" style="cursor:pointer; border:2px solid var(--gold-500)">
-          <h3>🤝 ${t("my_group")}</h3>
+          <h3><i class="fa-solid fa-handshake" aria-label="group"></i> ${t("my_group")}</h3>
           <div class="muted">${lot.cropType} · ${lot.members.length} ${t("group_members").toLowerCase()}</div>
         </div>`;
     }

@@ -61,7 +61,7 @@ class VoiceBookingEngine {
   }
 
   // --- UI Toast & Transcript Updates ---
-  updateUI(promptText, liveTranscript = "") {
+  updateUI(promptText, liveTranscript = "", isLoading = false) {
     let overlay = document.getElementById("voiceModalOverlay");
     if (!overlay) {
       overlay = document.createElement("div");
@@ -77,10 +77,14 @@ class VoiceBookingEngine {
     }
     overlay.style.display = "flex";
 
+    const statusBadge = isLoading
+      ? `<span style="background:#0284c7; color:#e0f2fe; font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px;"><i class="fa-solid fa-spinner fa-spin" aria-label="loading"></i> FETCHING DATA...</span>`
+      : `<span style="background:#065f46; color:#34d399; font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px;"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i> SPOKEN DIALOGUE FLOW</span>`;
+
     overlay.innerHTML = `
       <div style="background: #1e293b; border: 2px solid #10b981; border-radius: 20px; max-width: 440px; width: 100%; padding: 24px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-          <span style="background:#065f46; color:#34d399; font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px;">🎙️ SPOKEN DIALOGUE FLOW</span>
+          ${statusBadge}
           <span style="font-size:11px; color:#94a3b8;">Best in Chrome</span>
         </div>
         
@@ -88,8 +92,8 @@ class VoiceBookingEngine {
           ${promptText}
         </div>
 
-        <div style="background: #0f172a; border-radius: 12px; padding: 12px; font-size: 13px; color: #38bdf8; min-height: 48px; display:flex; align-items:center; justify-center: center; border: 1px solid #334155; margin-bottom: 16px;">
-          💬 Heard: "${liveTranscript || "Listening..."}"
+        <div style="background: #0f172a; border-radius: 12px; padding: 12px; font-size: 13px; color: #38bdf8; min-height: 48px; display:flex; align-items:center; justify-content: center; border: 1px solid #334155; margin-bottom: 16px;">
+          <i class="fa-solid fa-comments" aria-label="transcript" style="margin-right:6px;"></i> Heard: "${liveTranscript || (isLoading ? "Fetching data from server..." : "Listening...")}"
         </div>
 
         <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">
@@ -97,7 +101,7 @@ class VoiceBookingEngine {
         </div>
 
         <button onclick="window.acVoiceEngine.stop()" style="background:#ef4444; color:white; border:none; padding:10px 20px; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; width:100%;">
-          🛑 Cancel Voice Booking
+          <i class="fa-solid fa-circle-xmark" aria-label="cancel"></i> Cancel Voice Booking
         </button>
       </div>
     `;
@@ -378,6 +382,7 @@ class VoiceBookingEngine {
   }
 
   async initCenterSelection() {
+    this.updateUI("Finding nearby procurement centres...", "", true);
     try {
       const farmer = typeof acFarmer === "function" ? acFarmer() : null;
       const lat = farmer?.location?.lat || 31.25;
@@ -401,6 +406,7 @@ class VoiceBookingEngine {
   }
 
   async initSlotSelection() {
+    this.updateUI("Checking available time slots...", "", true);
     try {
       const res = await acHttp.get(`/farmer/centers/${this.data.center._id}/slots`, { params: { date: this.data.date } });
       this.data.slotCandidates = res.data;
@@ -422,7 +428,7 @@ class VoiceBookingEngine {
 
   async executeSubmit() {
     this.state = VoiceBookingState.SUBMIT;
-    this.updateUI("Submitting your booking...");
+    this.updateUI("Submitting your booking...", "", true);
 
     try {
       const bRes = await acHttp.post("/farmer/bookings", {

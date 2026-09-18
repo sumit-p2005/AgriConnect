@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     box.innerHTML = `
       <div class="card">
-        <h3>🤝 ${lot.cropType} ${t("my_group")}</h3>
+        <h3><i class="fa-solid fa-handshake" aria-label="my group"></i> ${lot.cropType} ${t("my_group")}</h3>
         <div class="badge badge-gold">${lot.status.toUpperCase()}</div>
         <div style="margin-top:10px">${t("combined_qty")}: <b>${lot.totalQuantity}kg</b></div>
         <div>${t("group_members")}: <b>${lot.members.length}</b></div>
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="muted">${t("solo_price")}</div>
             <div style="font-size:20px;font-weight:800">Rs.${lot.soloPricePerQuintal}</div>
           </div>
-          <div style="font-size:28px;align-self:center">➡️</div>
+          <div style="font-size:20px;align-self:center"><i class="fa-solid fa-arrow-right" aria-label="to"></i></div>
           <div>
             <div class="muted">${t("group_price")}</div>
             <div style="font-size:20px;font-weight:800;color:var(--green-700)">Rs.${lot.pricePerQuintal}</div>

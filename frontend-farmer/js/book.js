@@ -105,7 +105,7 @@ function initLeafletMap(centers) {
   });
   L.marker([acFarmerLoc.lat, acFarmerLoc.lng], { icon: farmerIcon })
     .addTo(acLeafletMap)
-    .bindPopup("<b>🧑‍🌾 You are here</b>");
+    .bindPopup("<b><i class=\"fa-solid fa-user-pin\" aria-label=\"you are here\"></i> You are here</b>");
 
   // Center markers
   centers.forEach(c => {
@@ -119,7 +119,7 @@ function initLeafletMap(centers) {
       const marker = L.marker([c.location.lat, c.location.lng], { icon: centerIcon }).addTo(acLeafletMap);
       marker.bindPopup(`
         <div style="font-size:13px;font-weight:700;">${c.name}</div>
-        <div style="font-size:12px;color:#64748b;">📍 ${c.distanceKm} km away</div>
+        <div style="font-size:12px;color:#64748b;"><i class="fa-solid fa-location-dot" aria-label="location"></i> ${c.distanceKm} km away</div>
         <button onclick="pickCenter('${c._id}', '${c.name.replace(/'/g, "")}')" style="margin-top:6px;background:#166534;color:white;border:none;padding:4px 8px;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;">Select Centre</button>
       `);
     }
@@ -133,9 +133,9 @@ function renderCenterList(centers) {
       <div>
         <div style="font-weight:700">${c.name}</div>
         <div class="muted" style="font-size:13px">${c.address || ""}</div>
-        <div style="color:var(--green-700);font-size:13px;font-weight:700;margin-top:2px;">📍 ${c.distanceKm} km away</div>
+        <div style="color:var(--green-700);font-size:13px;font-weight:700;margin-top:2px;"><i class="fa-solid fa-location-dot" aria-label="location"></i> ${c.distanceKm} km away</div>
       </div>
-      <div style="font-size:22px">🏭</div>
+      <div style="font-size:22px"><i class="fa-solid fa-building" aria-label="centre"></i></div>
     </div>`).join("");
 }
 
@@ -154,7 +154,7 @@ function loadDates() {
     const label = off === 0 ? "Today / आज" : "Tomorrow / कल";
     return `<div class="list-item" onclick="pickDate('${iso}')">
       <div><div style="font-weight:700">${label}</div><div class="muted" style="font-size:13px">${iso}</div></div>
-      <div style="font-size:22px">📅</div>
+      <div style="font-size:22px"><i class="fa-solid fa-calendar" aria-label="date"></i></div>
     </div>`;
   }).join("");
   list.innerHTML = options;

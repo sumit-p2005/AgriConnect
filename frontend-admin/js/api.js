@@ -1,4 +1,4 @@
-const API_BASE = window.location.origin.includes("localhost") ? "http://localhost:5000/api" : "/api";
+const API_BASE = typeof API_BASE_URL !== "undefined" ? API_BASE_URL : (window.location.origin.includes("localhost") ? "http://localhost:5000/api" : `${window.location.origin}/api`);
 
 function adToken() { return localStorage.getItem("ad_token"); }
 function adSetSession(token, admin) {
@@ -33,12 +33,12 @@ function adBadge(status) {
 
 function adSidebar(active) {
   const items = [
-    ["dashboard.html", "📊", "Dashboard"],
-    ["queue.html", "🚶", "Live Queue"],
-    ["bookings.html", "📋", "All Bookings"],
-    ["slots.html", "🏭", "Centres & Slots"],
-    ["bulklots.html", "🤝", "Bulk Lots"],
-    ["analytics.html", "📈", "Analytics"]
+    ["dashboard.html", '<i class="fa-solid fa-chart-pie" aria-label="dashboard"></i>', "Dashboard"],
+    ["queue.html", '<i class="fa-solid fa-person-walking" aria-label="live queue"></i>', "Live Queue"],
+    ["bookings.html", '<i class="fa-solid fa-clipboard-list" aria-label="all bookings"></i>', "All Bookings"],
+    ["slots.html", '<i class="fa-solid fa-building" aria-label="centres and slots"></i>', "Centres & Slots"],
+    ["bulklots.html", '<i class="fa-solid fa-handshake" aria-label="bulk lots"></i>', "Bulk Lots"],
+    ["analytics.html", '<i class="fa-solid fa-chart-line" aria-label="analytics"></i>', "Analytics"]
   ];
   const admin = adAdmin();
   return `
@@ -49,6 +49,6 @@ function adSidebar(active) {
     <nav>
       ${items.map(([href, icon, label]) => `<a class="${href === active ? "active" : ""}" href="${href}">${icon} ${label}</a>`).join("")}
     </nav>
-    <div class="logout"><button onclick="adLogout()">🚪 Logout</button></div>
+    <div class="logout"><button onclick="adLogout()"><i class="fa-solid fa-right-from-bracket" aria-label="logout"></i> Logout</button></div>
   </div>`;
 }

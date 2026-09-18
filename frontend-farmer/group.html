@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgriConnect — My Group</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -14,7 +15,7 @@
       <h1 data-i18n="my_group">My Group</h1>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant">🎙️</button>
+      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
       <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
@@ -27,14 +28,15 @@
     <div class="card muted center-text" data-i18n="loading">Loading...</div>
   </div>
   <div class="bottom-nav">
-    <a class="nav-item" href="home.html"><span class="nav-icon">🏠</span><span data-i18n="welcome">Home</span></a>
-    <a class="nav-item" href="bookings.html"><span class="nav-icon">📋</span><span data-i18n="my_bookings">Bookings</span></a>
-    <a class="nav-item active" href="group.html"><span class="nav-icon">🤝</span><span data-i18n="my_group">Group</span></a>
-    <a class="nav-item" href="grievance.html"><span class="nav-icon">🛎️</span><span data-i18n="grievance">Help</span></a>
-    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span><span data-i18n="profile">Profile</span></a>
+    <a class="nav-item" href="home.html"><span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span><span data-i18n="welcome">Home</span></a>
+    <a class="nav-item" href="bookings.html"><span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span><span data-i18n="my_bookings">Bookings</span></a>
+    <a class="nav-item active" href="group.html"><span class="nav-icon"><i class="fa-solid fa-handshake" aria-label="group"></i></span><span data-i18n="my_group">Group</span></a>
+    <a class="nav-item" href="grievance.html"><span class="nav-icon"><i class="fa-solid fa-bell" aria-label="help"></i></span><span data-i18n="grievance">Help</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span><span data-i18n="profile">Profile</span></a>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
 <script src="js/voice.js"></script>

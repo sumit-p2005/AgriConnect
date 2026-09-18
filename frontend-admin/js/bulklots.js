@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
         <div class="filters" style="padding:12px 16px">
           <input type="text" id="clusterCrop" placeholder="Crop type e.g. Tomato">
-          <button class="btn btn-primary" onclick="runCluster()">🤝 Recluster now</button>
+          <button class="btn btn-primary" onclick="runCluster()"><i class="fa-solid fa-handshake" aria-label="recluster"></i> Recluster now</button>
           <span id="clusterResult" class="mono" style="align-self:center"></span>
         </div>
       </div>

@@ -1,14 +1,14 @@
 /* Shared status -> icon/badge-class/label-key mapping, used across pages. */
 const AC_STATUS_META = {
-  confirmed:      { icon: "✅", cls: "badge-green", key: "status_confirmed" },
-  waitlisted:     { icon: "⏳", cls: "badge-gold",  key: "status_waitlisted" },
-  arrived:        { icon: "🚶", cls: "badge-blue",  key: "status_arrived" },
-  quality_check:  { icon: "🔍", cls: "badge-blue",  key: "status_quality_check" },
-  approved:       { icon: "📝", cls: "badge-blue",  key: "status_approved" },
-  paid:           { icon: "💰", cls: "badge-green", key: "status_paid" },
-  completed:      { icon: "🎉", cls: "badge-green", key: "status_completed" },
-  rejected:       { icon: "❌", cls: "badge-red",   key: "status_rejected" },
-  cancelled:      { icon: "🚫", cls: "badge-red",   key: "status_cancelled" }
+  confirmed:      { icon: '<i class="fa-solid fa-circle-check" aria-label="confirmed"></i>', cls: "badge-green", key: "status_confirmed" },
+  waitlisted:     { icon: '<i class="fa-solid fa-clock" aria-label="waitlisted"></i>', cls: "badge-gold",  key: "status_waitlisted" },
+  arrived:        { icon: '<i class="fa-solid fa-person-walking" aria-label="arrived"></i>', cls: "badge-blue",  key: "status_arrived" },
+  quality_check:  { icon: '<i class="fa-solid fa-magnifying-glass" aria-label="quality check"></i>', cls: "badge-blue",  key: "status_quality_check" },
+  approved:       { icon: '<i class="fa-solid fa-file-signature" aria-label="approved"></i>', cls: "badge-blue",  key: "status_approved" },
+  paid:           { icon: '<i class="fa-solid fa-indian-rupee-sign" aria-label="paid"></i>', cls: "badge-green", key: "status_paid" },
+  completed:      { icon: '<i class="fa-solid fa-circle-check" aria-label="completed"></i>', cls: "badge-green", key: "status_completed" },
+  rejected:       { icon: '<i class="fa-solid fa-circle-xmark" aria-label="rejected"></i>', cls: "badge-red",   key: "status_rejected" },
+  cancelled:      { icon: '<i class="fa-solid fa-ban" aria-label="cancelled"></i>', cls: "badge-red",   key: "status_cancelled" }
 };
 
 function acBadge(status) {
@@ -22,12 +22,12 @@ function acTimelineHtml(booking) {
   const terminalBad = booking.status === "rejected" || booking.status === "cancelled";
   const currentIndex = AC_TIMELINE_ORDER.indexOf(booking.status);
   const steps = [
-    { key: "confirmed", icon: "✅", textKey: "timeline_booked" },
-    { key: "arrived", icon: "🚶", textKey: "timeline_arrived" },
-    { key: "quality_check", icon: "🔍", textKey: "timeline_quality" },
-    { key: "approved", icon: "📝", textKey: "timeline_approved" },
-    { key: "paid", icon: "💰", textKey: "timeline_paid" },
-    { key: "completed", icon: "🎉", textKey: "timeline_completed" }
+    { key: "confirmed", icon: '<i class="fa-solid fa-circle-check" aria-label="confirmed"></i>', textKey: "timeline_booked" },
+    { key: "arrived", icon: '<i class="fa-solid fa-person-walking" aria-label="arrived"></i>', textKey: "timeline_arrived" },
+    { key: "quality_check", icon: '<i class="fa-solid fa-magnifying-glass" aria-label="quality check"></i>', textKey: "timeline_quality" },
+    { key: "approved", icon: '<i class="fa-solid fa-file-signature" aria-label="approved"></i>', textKey: "timeline_approved" },
+    { key: "paid", icon: '<i class="fa-solid fa-indian-rupee-sign" aria-label="paid"></i>', textKey: "timeline_paid" },
+    { key: "completed", icon: '<i class="fa-solid fa-circle-check" aria-label="completed"></i>', textKey: "timeline_completed" }
   ];
 
   let html = "";
@@ -51,9 +51,12 @@ function acTimelineHtml(booking) {
   });
 
   if (terminalBad) {
+    const badIcon = booking.status === "rejected"
+      ? '<i class="fa-solid fa-circle-xmark" aria-label="rejected"></i>'
+      : '<i class="fa-solid fa-ban" aria-label="cancelled"></i>';
     html += `
       <div class="tl-step rejected">
-        <div class="tl-dot-col"><div class="tl-dot">${booking.status === "rejected" ? "❌" : "🚫"}</div></div>
+        <div class="tl-dot-col"><div class="tl-dot">${badIcon}</div></div>
         <div class="tl-text">
           <div class="title">${t(booking.status === "rejected" ? "status_rejected" : "status_cancelled")}</div>
           ${booking.qualityCheck?.remarks ? `<div class="desc">${booking.qualityCheck.remarks}</div>` : ""}

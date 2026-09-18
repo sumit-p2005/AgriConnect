@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgriConnect — Book Slot</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -17,7 +18,7 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acStartVoiceBooking()" title="Start Voice Booking">🎙️</button>
+      <button class="voice-btn" onclick="acStartVoiceBooking()" title="Start Voice Booking"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
       <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
@@ -36,7 +37,7 @@
     <!-- STEP 1: Centre + Map -->
     <div id="step1">
       <div class="card" style="padding:10px;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--green-700)">🗺️ Nearest Centres (Live Map)</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--green-700)"><i class="fa-solid fa-map-location-dot" aria-label="live map"></i> Nearest Centres (Live Map)</div>
         <div id="mapContainer"></div>
       </div>
       <div id="centerList"></div>
@@ -76,41 +77,41 @@
 
         <label data-i18n="need_transport">Do you need transportation to the centre?</label>
         <div class="icon-choices" id="transportChoices">
-          <div class="icon-choice selected" data-val="no"><span class="icon">🚜</span><span data-i18n="self_transport">Self Transport</span></div>
-          <div class="icon-choice" data-val="yes"><span class="icon">🚛</span><span data-i18n="request_pickup">Request Pickup</span></div>
+          <div class="icon-choice selected" data-val="no"><span class="icon"><i class="fa-solid fa-tractor" aria-label="self transport"></i></span><span data-i18n="self_transport">Self Transport</span></div>
+          <div class="icon-choice" data-val="yes"><span class="icon"><i class="fa-solid fa-truck" aria-label="request pickup"></i></span><span data-i18n="request_pickup">Request Pickup</span></div>
         </div>
         <div id="transportDetails" class="hidden" style="margin-top:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <label style="margin:0;">Pickup Location / Address</label>
-            <a href="javascript:void(0)" onclick="acUseCurrentLocation()" style="font-size:13px;font-weight:700;color:var(--green-700);text-decoration:underline;" data-i18n="use_current_location">📍 Use Current Location</a>
+            <a href="javascript:void(0)" onclick="acUseCurrentLocation()" style="font-size:13px;font-weight:700;color:var(--green-700);text-decoration:underline;" data-i18n="use_current_location"><i class="fa-solid fa-location-dot" aria-label="location"></i> Use Current Location</a>
           </div>
           <input type="text" id="pickupAddress" placeholder="e.g. Farm 4, Sansarpur Village">
         </div>
       </div>
 
       <button class="btn btn-primary" onclick="submitBooking()">
-        ✅ <span data-i18n="confirm_booking">Confirm Booking</span>
+        <i class="fa-solid fa-circle-check" aria-label="confirm booking"></i> <span data-i18n="confirm_booking">Confirm Booking</span>
       </button>
     </div>
 
     <!-- CONFIRMATION -->
     <div id="stepConfirm" class="hidden center-text">
       <div class="card">
-        <div class="big-check" id="confirmIcon">✅</div>
+        <div class="big-check" id="confirmIcon"><i class="fa-solid fa-circle-check" aria-label="success"></i></div>
         <h2 id="confirmTitle" data-i18n="booking_confirmed">Booking Confirmed!</h2>
         <div id="tokenBlock">
           <div class="muted" data-i18n="your_token">Your Token Number</div>
           <div class="token-big" id="tokenValue">#0</div>
         </div>
         <div id="transportStatusCard" class="card hidden" style="background:var(--gold-100);border:1px solid var(--gold-500);margin-top:12px;">
-          <strong>🚛 Transport Request Sent!</strong>
+          <strong><i class="fa-solid fa-truck" aria-label="transport request"></i> Transport Request Sent!</strong>
           <div class="muted" style="font-size:13px;margin-top:4px;">An admin will assign a pickup vehicle shortly. SMS notification will be sent.</div>
         </div>
         <div class="qr-box"><img id="qrImg" width="160" height="160" alt="QR"></div>
         <div class="muted" id="confirmDetails"></div>
       </div>
       <a class="btn btn-outline" id="waLink" target="_blank" style="margin-bottom:10px; text-decoration:none;">
-        💬 <span data-i18n="share_whatsapp">Share on WhatsApp</span>
+        <i class="fa-solid fa-comments" aria-label="share whatsapp"></i> <span data-i18n="share_whatsapp">Share on WhatsApp</span>
       </a>
       <button class="btn btn-primary" onclick="location.href='home.html'" data-i18n="go_home">Go to Home</button>
     </div>
@@ -119,6 +120,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
 <script src="js/voice.js"></script>

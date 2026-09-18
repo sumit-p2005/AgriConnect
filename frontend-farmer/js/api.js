@@ -1,7 +1,7 @@
 /* Thin Axios wrapper + auth storage + a tiny offline queue-and-retry
    for the two write actions a farmer does most (book / cancel), so a
    patchy rural connection doesn't lose the action silently. */
-const API_BASE = window.location.origin.includes("localhost") ? "http://localhost:5000/api" : "/api";
+const API_BASE = typeof API_BASE_URL !== "undefined" ? API_BASE_URL : (window.location.origin.includes("localhost") ? "http://localhost:5000/api" : `${window.location.origin}/api`);
 
 function acToken() { return localStorage.getItem("ac_token"); }
 function acSetSession(token, farmer) {
