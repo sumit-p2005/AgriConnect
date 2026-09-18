@@ -93,8 +93,18 @@ async function deleteSlot(id) {
   loadSlots();
 }
 
+function getModalRoot() {
+  let el = document.getElementById("modalRoot");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "modalRoot";
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
 function openAddCenterModal() {
-  document.getElementById("modalRoot").innerHTML = `
+  getModalRoot().innerHTML = `
   <div class="modal-backdrop"><div class="modal">
     <h3>Add Procurement Centre</h3>
     <label>Name</label><input id="cName">
@@ -123,7 +133,7 @@ async function submitCenter() {
 }
 
 function openGenerateModal() {
-  document.getElementById("modalRoot").innerHTML = `
+  getModalRoot().innerHTML = `
   <div class="modal-backdrop"><div class="modal">
     <h3>Bulk-generate Slots</h3>
     <label>Date</label><input type="date" id="gDate" value="${adToday()}">
@@ -151,4 +161,4 @@ async function submitGenerate() {
   document.getElementById("slotDateFilter").value = body.date;
   loadSlots();
 }
-function closeModal() { document.getElementById("modalRoot").innerHTML = ""; }
+function closeModal() { getModalRoot().innerHTML = ""; }
