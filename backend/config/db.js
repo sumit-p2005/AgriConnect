@@ -1,7 +1,6 @@
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
 
 let mongoServer = null;
 
@@ -11,32 +10,30 @@ async function connectDB() {
   }
 
   const uri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/agriconnect";
-  try {
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
-    console.log("[db] connected ->", uri);
-  } catch (err) {
-    if (!mongoServer) {
-      console.log("[db] Standard MongoDB connection failed. Starting embedded MongoDB with persistence...");
-      const dbPath = path.join(__dirname, "../.mongo_data");
-      if (!fs.existsSync(dbPath)) fs.mkdirSync(dbPath, { recursive: true });
+  const isVercel = !!(process.env.VERCEL || process.env.AWS_EXECUTION_ENV);
 
+  try {
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
+    console.log("[db] connected -> MongoDB");
+  } catch (err) {
+    console.warn("[db] Primary MongoDB connection failed:", err.message);
+
+    const { MongoMemoryServer } = require("mongodb-memory-server");
+    if (!mongoServer) {
+      console.log("[db] Starting embedded MongoMemoryServer fallback...");
       try {
-        mongoServer = await MongoMemoryServer.create({
-          instance: {
-            port: 27017,
-            dbName: "agriconnect",
-            dbPath: dbPath,
-            storageEngine: "wiredTiger"
-          }
-        });
-      } catch (e) {
-        mongoServer = await MongoMemoryServer.create({
-          instance: {
-            dbName: "agriconnect",
-            dbPath: dbPath,
-            storageEngine: "wiredTiger"
-          }
-        });
+        let instanceOpts = { dbName: "agriconnect" };
+        if (!isVercel) {
+          const dbPath = path.join(__dirname, "../.mongo_data");
+          if (!fs.existsSync(dbPath)) fs.mkdirSync(dbPath, { recursive: true });
+          instanceOpts.dbPath = dbPath;
+          instanceOpts.storageEngine = "wiredTiger";
+        }
+
+        mongoServer = await MongoMemoryServer.create({ instance: instanceOpts });
+      } catch (memCreateErr) {
+        console.warn("[db] In-memory DB creation with path failed, falling back to pure RAM:", memCreateErr.message);
+        mongoServer = await MongoMemoryServer.create({ instance: { dbName: "agriconnect" } });
       }
     }
     const memUri = mongoServer.getUri();

@@ -14,6 +14,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ensure DB connection for requests (serverless friendly)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (e) {
+    console.error("[db middleware error]:", e.message);
+    res.status(500).json({ error: "Database connection failed." });
+  }
+});
+
 // API Routes
 app.get("/api/health", (req, res) => res.json({ ok: true, service: "AgriConnect API" }));
 app.use("/api/auth", authRoutes);
@@ -32,7 +43,7 @@ app.get("/", (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>AgriConnect — Local Server</title>
+      <title>AgriConnect — Portal</title>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -54,7 +65,7 @@ app.get("/", (req, res) => {
     </head>
     <body>
       <div class="card">
-        <span class="badge">● LOCALHOST ONLINE</span>
+        <span class="badge">● AGRICONNECT LIVE</span>
         <h1>🌾 AgriConnect Hub</h1>
         <p class="sub">AI-Driven Smallholder Agricultural Procurement Platform (SIH 2026)</p>
         
@@ -91,28 +102,31 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-connectDB()
-  .then(async () => {
-    try {
-      const centerCount = await Center.countDocuments();
-      if (centerCount === 0) {
-        console.log("[server] No data found in database. Auto-seeding initial demo data...");
-        await seed();
+if (require.main === module) {
+  connectDB()
+    .then(async () => {
+      try {
+        const centerCount = await Center.countDocuments();
+        if (centerCount === 0) {
+          console.log("[server] No data found in database. Auto-seeding initial demo data...");
+          await seed();
+        }
+      } catch (e) {
+        console.error("[server] Seed check error:", e.message);
       }
-    } catch (e) {
-      console.error("[server] Seed check error:", e.message);
-    }
-    app.listen(PORT, () => {
-      console.log("==================================================");
-      console.log(`🚀 AgriConnect API & Frontends running at:`);
-      console.log(`   ► Portal Hub:    http://localhost:${PORT}/`);
-      console.log(`   ► Farmer App:    http://localhost:${PORT}/farmer/`);
-      console.log(`   ► Admin App:     http://localhost:${PORT}/admin/`);
-      console.log(`   ► Backend API:   http://localhost:${PORT}/api/health`);
-      console.log("==================================================");
+      app.listen(PORT, () => {
+        console.log("==================================================");
+        console.log(`🚀 AgriConnect API & Frontends running at:`);
+        console.log(`   ► Portal Hub:    http://localhost:${PORT}/`);
+        console.log(`   ► Farmer App:    http://localhost:${PORT}/farmer/`);
+        console.log(`   ► Admin App:     http://localhost:${PORT}/admin/`);
+        console.log(`   ► Backend API:   http://localhost:${PORT}/api/health`);
+        console.log("==================================================");
+      });
+    })
+    .catch((e) => {
+      console.error("[db] connection failed:", e.message);
     });
-  })
-  .catch((e) => {
-    console.error("[db] connection failed:", e.message);
-    process.exit(1);
-  });
+}
+
+module.exports = app;
