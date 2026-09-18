@@ -102,8 +102,19 @@
             <i class="fa-solid fa-spa"></i>
             <span class="crop-name">Mustard</span>
           </div>
+          <div class="crop-card" data-crop="Other" onclick="acSelectCrop('Other')">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span class="crop-name">Other</span>
+          </div>
         </div>
         <input type="hidden" id="cropType" value="Tomato">
+
+        <div id="otherCropWrap" class="hidden" style="margin-top:14px;background:var(--green-50);border:1.5px solid var(--green-600);padding:14px;border-radius:var(--radius-md);">
+          <label for="otherCropInput" style="margin-top:0;font-weight:700;color:var(--green-900);">
+            <i class="fa-solid fa-pen"></i> Enter Crop Name
+          </label>
+          <input type="text" id="otherCropInput" placeholder="e.g. Sugarcane, Cotton, Barley, Garlic, Gram" oninput="acUpdateOtherCrop(this.value)">
+        </div>
 
         <div class="field-row">
           <div>

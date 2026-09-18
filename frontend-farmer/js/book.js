@@ -25,11 +25,38 @@ function prefillFarmerProfileData() {
 }
 
 function acSelectCrop(cropName) {
+  const isOther = !cropName || cropName.toLowerCase() === "other";
+  const knownCrops = ["tomato", "wheat", "rice", "potato", "onion", "spinach", "mango", "mustard"];
+  const isKnown = knownCrops.includes(cropName.toLowerCase());
+
   const input = document.getElementById("cropType");
-  if (input) input.value = cropName;
-  document.querySelectorAll(".crop-card").forEach(el => {
-    el.classList.toggle("selected", el.dataset.crop.toLowerCase() === cropName.toLowerCase());
-  });
+  const otherWrap = document.getElementById("otherCropWrap");
+  const otherInput = document.getElementById("otherCropInput");
+
+  if (!isKnown || isOther) {
+    document.querySelectorAll(".crop-card").forEach(el => {
+      el.classList.toggle("selected", el.dataset.crop.toLowerCase() === "other");
+    });
+    if (otherWrap) otherWrap.classList.remove("hidden");
+    if (otherInput) {
+      if (cropName && cropName.toLowerCase() !== "other") {
+        otherInput.value = cropName;
+      }
+      if (input) input.value = otherInput.value.trim() || "Other";
+      otherInput.focus();
+    }
+  } else {
+    document.querySelectorAll(".crop-card").forEach(el => {
+      el.classList.toggle("selected", el.dataset.crop.toLowerCase() === cropName.toLowerCase());
+    });
+    if (otherWrap) otherWrap.classList.add("hidden");
+    if (input) input.value = cropName;
+  }
+}
+
+function acUpdateOtherCrop(val) {
+  const input = document.getElementById("cropType");
+  if (input) input.value = val.trim() || "Other";
 }
 
 function setupTransportChoices() {
@@ -318,11 +345,17 @@ function acVoiceFillQuantity() {
 }
 
 async function submitBooking() {
-  const cropType = document.getElementById("cropType").value.trim();
+  let cropType = document.getElementById("cropType").value.trim();
+  const otherInput = document.getElementById("otherCropInput");
+  if ((!cropType || cropType.toLowerCase() === "other") && otherInput && otherInput.value.trim()) {
+    cropType = otherInput.value.trim();
+  }
   const variety = document.getElementById("variety").value.trim();
   const quantity = parseInt(document.getElementById("quantity").value) || 0;
   const harvestWindowDays = parseInt(document.getElementById("harvestWindow").value) || 3;
-  if (!cropType || !quantity) return showErrMsg("Please select a crop type and enter quantity.");
+  if (!cropType || cropType.toLowerCase() === "other" || !quantity) {
+    return showErrMsg("Please enter/select your crop type and quantity.");
+  }
 
   try {
     const res = await acHttp.post("/farmer/bookings", {
