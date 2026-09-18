@@ -344,7 +344,11 @@ function acVoiceFillQuantity() {
   }
 }
 
+let acIsSubmitting = false;
+
 async function submitBooking() {
+  if (acIsSubmitting) return;
+
   let cropType = document.getElementById("cropType").value.trim();
   const otherInput = document.getElementById("otherCropInput");
   if ((!cropType || cropType.toLowerCase() === "other") && otherInput && otherInput.value.trim()) {
@@ -355,6 +359,13 @@ async function submitBooking() {
   const harvestWindowDays = parseInt(document.getElementById("harvestWindow").value) || 3;
   if (!cropType || cropType.toLowerCase() === "other" || !quantity) {
     return showErrMsg("Please enter/select your crop type and quantity.");
+  }
+
+  acIsSubmitting = true;
+  const submitBtn = document.querySelector("#step4 .btn-primary");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
   }
 
   try {
@@ -389,7 +400,14 @@ async function submitBooking() {
     }
 
     showConfirmation(booking);
-  } catch (e) { showErr(e); }
+  } catch (e) {
+    acIsSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span data-i18n="confirm_booking">Confirm Booking</span>';
+    }
+    showErr(e);
+  }
 }
 
 function showConfirmation(booking) {

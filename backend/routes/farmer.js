@@ -81,6 +81,21 @@ router.post("/bookings", async (req, res) => {
     const farmer = await Farmer.findById(req.user.id);
     const center = await Center.findById(centerId);
     if (!center) return res.status(404).json({ error: "Procurement centre not found." });
+
+    // Deduplication check: if identical booking was created in the last 10 seconds, return it
+    const tenSecondsAgo = new Date(Date.now() - 10000);
+    const existing = await Booking.findOne({
+      farmerId: req.user.id,
+      centerId,
+      slotId,
+      cropType: new RegExp(`^${cropType}$`, "i"),
+      quantity,
+      createdAt: { $gte: tenSecondsAgo }
+    });
+    if (existing) {
+      return res.json(existing);
+    }
+
     const crop = await Crop.findOne({ name: new RegExp(`^${cropType}$`, "i") });
 
     const claimed = await Slot.findOneAndUpdate(
