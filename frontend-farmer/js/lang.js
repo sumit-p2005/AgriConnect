@@ -53,7 +53,7 @@ function acToggleLang() {
 function acRenderLangControl() {
   const cur = localStorage.getItem("ac_lang") || "en";
   return `
-    <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+    <select class="lang-select" onchange="acSetLang(this.value)">
       <option value="en" ${cur === "en" ? "selected" : ""}>English</option>
       <option value="hi" ${cur === "hi" ? "selected" : ""}>हिंदी</option>
       <option value="pa" ${cur === "pa" ? "selected" : ""}>ਪੰਜਾਬੀ</option>
