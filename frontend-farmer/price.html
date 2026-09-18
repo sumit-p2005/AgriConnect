@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgriConnect — Today's Price</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriConnect — Today's Price</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="back-row">
-      <button class="back-btn" onclick="location.href='home.html'">←</button>
-      <h1 data-i18n="price_check">Today's Price</h1>
+      <button class="back-btn" onclick="location.href='home.html'"><i class="fa-solid fa-arrow-left" aria-label="back"></i></button>
+      <div>
+        <h1 data-i18n="price_check">Today's Mandi Price</h1>
+        <div class="sub" data-i18n="app_name">AgriConnect</div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
-      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+      <select class="lang-select" onchange="acSetLang(this.value)">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
         <option value="pa">ਪੰਜਾਬੀ</option>
@@ -24,33 +26,67 @@
       </select>
     </div>
   </div>
+
   <div class="content">
     <div class="card">
-      <label data-i18n="crop_type">Crop type</label>
-      <input type="text" id="priceCrop" placeholder="e.g. Wheat, Tomato">
-      <button class="btn btn-primary" style="margin-top:14px" onclick="checkPrice()"><i class="fa-solid fa-magnifying-glass" aria-label="search"></i> Check</button>
+      <label data-i18n="crop_type">Select or Enter Crop</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Tomato')">Tomato</button>
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Wheat')">Wheat</button>
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Rice')">Rice</button>
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Potato')">Potato</button>
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Onion')">Onion</button>
+        <button type="button" class="badge badge-green" style="cursor:pointer;border:none;padding:6px 12px;" onclick="selectQuickCrop('Mustard')">Mustard</button>
+      </div>
+      <input type="text" id="priceCrop" placeholder="e.g. Wheat, Tomato" value="Tomato">
+      <button class="btn btn-primary" style="margin-top:16px" onclick="checkPrice()">
+        <i class="fa-solid fa-magnifying-glass" aria-label="search"></i> Check Live Mandi Rates
+      </button>
     </div>
+
     <div id="priceResult"></div>
   </div>
+
+  <div class="bottom-nav">
+    <a class="nav-item" href="home.html"><span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span><span data-i18n="welcome">Home</span></a>
+    <a class="nav-item" href="bookings.html"><span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span><span data-i18n="my_bookings">Bookings</span></a>
+    <a class="nav-item" href="group.html"><span class="nav-icon"><i class="fa-solid fa-handshake" aria-label="group"></i></span><span data-i18n="my_group">Group</span></a>
+    <a class="nav-item" href="grievance.html"><span class="nav-icon"><i class="fa-solid fa-bell" aria-label="help"></i></span><span data-i18n="grievance">Help</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span><span data-i18n="profile">Profile</span></a>
+  </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
-<script src="js/voice.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => { acRequireLogin(); });
+document.addEventListener("DOMContentLoaded", () => {
+  acRequireLogin();
+  checkPrice();
+});
+
+function selectQuickCrop(name) {
+  document.getElementById("priceCrop").value = name;
+  checkPrice();
+}
+
 async function checkPrice() {
   const crop = document.getElementById("priceCrop").value.trim();
   const box = document.getElementById("priceResult");
   if (!crop) return;
+  box.innerHTML = `<div class="card skeleton skeleton-card"></div>`;
+
   try {
     const res = (await acHttp.get(`/farmer/price/${encodeURIComponent(crop)}`)).data;
     box.innerHTML = `
-      <div class="card center-text">
-        <div class="muted">${t("todays_price_for")} ${res.crop}</div>
-        <div style="font-size:34px;font-weight:800;color:var(--green-700)">Rs.${res.pricePerQuintal}</div>
-        <div class="muted">${t("per_quintal")} · ${res.asOf}</div>
+      <div class="card center-text" style="border-top:4px solid var(--green-600);">
+        <div class="muted">${t("todays_price_for")} <b style="color:var(--ink);">${res.crop}</b></div>
+        <div style="font-size:clamp(2rem, 3vw + 1rem, 2.75rem);font-weight:800;color:var(--green-700);margin:8px 0;">₹${res.pricePerQuintal}</div>
+        <div class="badge badge-gold" style="font-size:13px;margin-bottom:12px;">${t("per_quintal")} · Updated ${res.asOf}</div>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="location.href='book.html'">
+          <i class="fa-solid fa-calendar-plus"></i> Book Delivery Slot for ${res.crop}
+        </button>
       </div>`;
   } catch (e) {
     box.innerHTML = `<div class="error-box">${acErrorMsg(e)}</div>`;

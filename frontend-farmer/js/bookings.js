@@ -14,14 +14,28 @@ async function loadList() {
     acAllBookings = (await acHttp.get("/farmer/bookings")).data;
     const list = document.getElementById("bookingList");
     if (!acAllBookings.length) {
-      list.innerHTML = `<div class="card muted center-text">${t("no_bookings")}</div>`;
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+          <h4>No Bookings Yet</h4>
+          <p>You haven't booked any procurement slots. Let's get your first harvest scheduled!</p>
+          <button class="btn btn-primary" style="max-width:240px;margin:0 auto;" onclick="location.href='book.html'">
+            <i class="fa-solid fa-plus"></i> Book a Slot Now
+          </button>
+        </div>`;
       return;
     }
     list.innerHTML = acAllBookings.map(b => `
-      <div class="card" style="cursor:pointer" onclick="openDetail('${b._id}')">
-        <h3>${b.cropType} · ${b.quantity}kg</h3>
-        <div class="muted">${b.centerId?.name || ""} · ${b.slotId?.date || ""} ${b.slotId?.startTime || ""}</div>
-        ${acBadge(b.status)}
+      <div class="card" style="cursor:pointer;border-left: 4px solid var(--green-600);" onclick="openDetail('${b._id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h3>${b.cropType} · ${b.quantity}kg</h3>
+            <div class="muted" style="margin-top:2px;">
+              <i class="fa-solid fa-building"></i> ${b.centerId?.name || "Centre"} · <i class="fa-solid fa-clock"></i> ${b.slotId?.date || ""} ${b.slotId?.startTime || ""}
+            </div>
+          </div>
+          ${acBadge(b.status)}
+        </div>
       </div>`).join("");
   } catch (e) { showErr(e); }
 }

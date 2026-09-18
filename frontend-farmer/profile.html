@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgriConnect — Profile</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriConnect — Profile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="back-row">
-      <button class="back-btn" onclick="location.href='home.html'">←</button>
-      <h1 data-i18n="profile">Profile</h1>
+      <button class="back-btn" onclick="location.href='home.html'"><i class="fa-solid fa-arrow-left" aria-label="back"></i></button>
+      <div>
+        <h1 data-i18n="profile">Farmer Profile</h1>
+        <div class="sub" data-i18n="app_name">AgriConnect</div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
-      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+      <select class="lang-select" onchange="acSetLang(this.value)">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
         <option value="pa">ਪੰਜਾਬੀ</option>
@@ -24,9 +26,12 @@
       </select>
     </div>
   </div>
+
   <div class="content" id="profileContent">
-    <div class="card muted center-text" data-i18n="loading">Loading...</div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
   </div>
+
   <div class="bottom-nav">
     <a class="nav-item" href="home.html"><span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span><span data-i18n="welcome">Home</span></a>
     <a class="nav-item" href="bookings.html"><span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span><span data-i18n="my_bookings">Bookings</span></a>
@@ -35,11 +40,11 @@
     <a class="nav-item active" href="profile.html"><span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span><span data-i18n="profile">Profile</span></a>
   </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
-<script src="js/voice.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
   acRequireLogin();
@@ -51,24 +56,39 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     document.getElementById("profileContent").innerHTML = `
-      <div class="card center-text">
-        <div style="font-size:44px"><i class="fa-solid fa-user-gear" aria-label="farmer profile"></i></div>
-        <h2 style="margin:6px 0 0">${f.name || "Farmer"}</h2>
-        <div class="muted">${f.phone || ""}</div>
+      <div class="card center-text" style="border-top:4px solid var(--green-700);">
+        <div style="font-size:48px;color:var(--green-800);"><i class="fa-solid fa-circle-user" aria-label="farmer profile"></i></div>
+        <h2 style="margin:8px 0 2px;">${f.name || "Farmer"}</h2>
+        <div class="muted"><i class="fa-solid fa-phone"></i> ${f.phone || ""}</div>
       </div>
-      <div class="card">
-        <div><b>${t("village")}:</b> ${f.village || "-"}</div>
-        <div><b>${t("district")}:</b> ${f.district || "-"}</div>
-        <div><b>${t("state")}:</b> ${f.state || "-"}</div>
-        <div><b>${t("primary_crop")}:</b> ${f.primaryCrop || "-"}</div>
-        <div><b>${t("storage")}:</b> ${f.storageCapability || "none"}</div>
+      
+      <div class="grid-2col">
+        <div class="card">
+          <h3><i class="fa-solid fa-location-dot" style="color:var(--green-700);"></i> Farm Location & Crop</h3>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+            <div><b>${t("village")}:</b> ${f.village || "-"}</div>
+            <div><b>${t("district")}:</b> ${f.district || "-"}</div>
+            <div><b>${t("state")}:</b> ${f.state || "-"}</div>
+            <div><b>${t("primary_crop")}:</b> ${f.primaryCrop || "-"}</div>
+            <div><b>${t("storage")}:</b> ${f.storageCapability || "none"}</div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3><i class="fa-solid fa-award" style="color:var(--gold-500);"></i> ${t("reputation")} & Reliability</h3>
+          <div style="margin:12px 0;">
+            <span class="badge badge-green" style="font-size:16px;padding:8px 16px;">${f.reputationScore ?? 80}/100 Score</span>
+          </div>
+          <p class="muted" style="margin:0 0 10px;">${t("on_time")}: <b>${f.onTimeArrivals ?? 0}</b> out of <b>${f.totalArrivals ?? 0}</b> visits on time.</p>
+          <div style="font-size:13px;color:var(--green-800);background:var(--green-100);padding:8px 12px;border-radius:8px;">
+            <i class="fa-solid fa-circle-check"></i> High score unlocks priority slots during harvest peaks.
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <h3><i class="fa-solid fa-award" aria-label="reputation"></i> ${t("reputation")}</h3>
-        <div class="badge badge-green">${f.reputationScore ?? 80}/100</div>
-        <div class="muted" style="margin-top:8px">${t("on_time")}: ${f.onTimeArrivals ?? 0}/${f.totalArrivals ?? 0}</div>
-      </div>
-      <button class="btn btn-danger" onclick="acLogout()"><i class="fa-solid fa-right-from-bracket" aria-label="logout"></i> ${t("logout")}</button>
+
+      <button class="btn btn-danger" style="margin-top:8px;" onclick="acLogout()">
+        <i class="fa-solid fa-right-from-bracket" aria-label="logout"></i> ${t("logout")}
+      </button>
     `;
   } catch (e) {
     document.getElementById("profileContent").innerHTML = `<div class="error-box">${acErrorMsg(e)}</div>`;

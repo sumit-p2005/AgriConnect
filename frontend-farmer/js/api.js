@@ -9,8 +9,20 @@ function acSetSession(token, farmer) {
   localStorage.setItem("ac_farmer", JSON.stringify(farmer));
 }
 function acFarmer() { try { return JSON.parse(localStorage.getItem("ac_farmer")); } catch { return null; } }
-function acLogout() { localStorage.removeItem("ac_token"); localStorage.removeItem("ac_farmer"); window.location.href = "index.html"; }
-function acRequireLogin() { if (!acToken()) window.location.href = "index.html"; }
+function acLogout() {
+  localStorage.removeItem("ac_token");
+  localStorage.removeItem("ac_farmer");
+  const isLoginPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/farmer" || window.location.pathname === "/farmer/";
+  if (!isLoginPage) {
+    window.location.href = "index.html";
+  }
+}
+function acRequireLogin() {
+  if (!acToken()) {
+    const isLoginPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/farmer" || window.location.pathname === "/farmer/";
+    if (!isLoginPage) window.location.href = "index.html";
+  }
+}
 
 const acHttp = axios.create({ baseURL: API_BASE });
 acHttp.interceptors.request.use(cfg => {
@@ -22,7 +34,7 @@ acHttp.interceptors.request.use(cfg => {
 acHttp.interceptors.response.use(
   res => res,
   err => {
-    if (err?.response?.status === 401) {
+    if (err?.response?.status === 401 && !err?.config?.url?.includes("/auth/")) {
       acLogout();
     }
     return Promise.reject(err);

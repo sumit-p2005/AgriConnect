@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgriConnect — Report Problem</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriConnect — Report Problem</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="back-row">
-      <button class="back-btn" onclick="location.href='home.html'">←</button>
-      <h1 data-i18n="grievance">Report a Problem</h1>
+      <button class="back-btn" onclick="location.href='home.html'"><i class="fa-solid fa-arrow-left" aria-label="back"></i></button>
+      <div>
+        <h1 data-i18n="grievance">Report a Problem</h1>
+        <div class="sub" data-i18n="app_name">AgriConnect</div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
-      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+      <select class="lang-select" onchange="acSetLang(this.value)">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
         <option value="pa">ਪੰਜਾਬੀ</option>
@@ -33,18 +35,25 @@
         <div class="icon-choice" data-val="other"><span class="icon"><i class="fa-solid fa-pen" aria-label="other"></i></span><span data-i18n="grievance_other">Other</span></div>
       </div>
       <label data-i18n="describe_problem">Describe the problem</label>
-      <textarea id="grievanceDesc" rows="3"></textarea>
-      <button class="btn btn-primary" style="margin-top:14px" onclick="submitGrievance()"><i class="fa-solid fa-paper-plane" aria-label="submit"></i> <span data-i18n="submit">Submit</span></button>
+      <textarea id="grievanceDesc" rows="3" placeholder="Tell us what went wrong..."></textarea>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="submitGrievance()"><i class="fa-solid fa-paper-plane" aria-label="submit"></i> <span data-i18n="submit">Submit Help Request</span></button>
     </div>
-    <h3 data-i18n="past_complaints" style="padding-left:4px">Past complaints</h3>
+    <h3 data-i18n="past_complaints" style="padding-left:4px;margin-top:20px;">Past Complaints & Status</h3>
     <div id="grievanceList"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <a class="nav-item" href="home.html"><span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span><span data-i18n="welcome">Home</span></a>
+    <a class="nav-item" href="bookings.html"><span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span><span data-i18n="my_bookings">Bookings</span></a>
+    <a class="nav-item" href="group.html"><span class="nav-icon"><i class="fa-solid fa-handshake" aria-label="group"></i></span><span data-i18n="my_group">Group</span></a>
+    <a class="nav-item active" href="grievance.html"><span class="nav-icon"><i class="fa-solid fa-bell" aria-label="help"></i></span><span data-i18n="grievance">Help</span></a>
+    <a class="nav-item" href="profile.html"><span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span><span data-i18n="profile">Profile</span></a>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
-<script src="js/voice.js"></script>
 <script>
 let gType = "quality";
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,7 +74,7 @@ function submitGrievance() {
   const desc = document.getElementById("grievanceDesc").value.trim();
   if (!desc) return;
   const list = JSON.parse(localStorage.getItem(gKey()) || "[]");
-  list.unshift({ type: gType, desc, status: "open", at: new Date().toISOString() });
+  list.unshift({ type: gType, desc, status: "Under Review", at: new Date().toISOString() });
   localStorage.setItem(gKey(), JSON.stringify(list));
   document.getElementById("grievanceDesc").value = "";
   renderList();
@@ -73,12 +82,22 @@ function submitGrievance() {
 function renderList() {
   const list = JSON.parse(localStorage.getItem(gKey()) || "[]");
   const box = document.getElementById("grievanceList");
-  if (!list.length) { box.innerHTML = `<div class="card muted center-text">-</div>`; return; }
+  if (!list.length) {
+    box.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h4>No Past Complaints</h4>
+        <p>All your deliveries and payments are in good standing.</p>
+      </div>`;
+    return;
+  }
   box.innerHTML = list.map(g => `
     <div class="card">
-      <div style="font-weight:700">${g.type}</div>
-      <div class="muted">${g.desc}</div>
-      <span class="badge badge-gold">${g.status}</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:700;text-transform:capitalize;">${g.type} Problem</div>
+        <span class="badge badge-gold">${g.status}</span>
+      </div>
+      <div class="muted" style="margin-top:6px;">${g.desc}</div>
     </div>`).join("");
 }
 </script>

@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgriConnect — Book Slot</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriConnect — Book Slot</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="back-row">
-      <button class="back-btn" onclick="acBookBack()">←</button>
+      <button class="back-btn" onclick="acBookBack()"><i class="fa-solid fa-arrow-left" aria-label="back"></i></button>
       <div>
         <h1 id="stepTitle" data-i18n="step_center">Choose Centre</h1>
+        <div class="sub" data-i18n="app_name">AgriConnect</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acStartVoiceBooking()" title="Start Voice Booking"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
-      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+      <select class="lang-select" onchange="acSetLang(this.value)">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
         <option value="pa">ਪੰਜਾਬੀ</option>
@@ -29,18 +29,30 @@
   </div>
 
   <div class="content">
+    <!-- Visible Step Indicator -->
+    <div class="step-indicator-bar" id="stepIndicatorBar">
+      <span class="step-badge" id="stepBadge"><i class="fa-solid fa-list-check"></i> Step 1 of 4</span>
+      <span class="step-title-text" id="stepIndicatorTitle">Select Procurement Centre</span>
+    </div>
+
     <div class="progress-dots" id="progressDots">
       <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
     </div>
+
     <div id="errorBox" class="error-box hidden"></div>
 
     <!-- STEP 1: Centre + Map -->
     <div id="step1">
-      <div class="card" style="padding:10px;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--green-700)"><i class="fa-solid fa-map-location-dot" aria-label="live map"></i> Nearest Centres (Live Map)</div>
+      <div class="card" style="padding:12px;margin-bottom:14px;">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:8px;color:var(--green-800)">
+          <i class="fa-solid fa-map-location-dot" aria-label="live map"></i> Nearest Centres (Live GPS Map)
+        </div>
         <div id="mapContainer"></div>
       </div>
-      <div id="centerList"></div>
+      <div id="centerList">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
     </div>
 
     <!-- STEP 2: Date -->
@@ -56,34 +68,90 @@
     <!-- STEP 4: Crop details & Transportation -->
     <div id="step4" class="hidden">
       <div class="card">
-        <label data-i18n="crop_type">Crop type</label>
-        <input type="text" id="cropType" placeholder="e.g. Tomato, Wheat">
-        <label data-i18n="variety">Variety (optional)</label>
-        <input type="text" id="variety">
-        <label data-i18n="quantity_kg">Quantity (kg)</label>
-        <div class="stepper">
-          <button onclick="acStepQty(-50)">−</button>
-          <input type="number" id="quantity" value="100">
-          <button onclick="acStepQty(50)">+</button>
+        <label data-i18n="crop_type">Select Crop</label>
+        <div class="crop-grid" id="cropGrid">
+          <div class="crop-card selected" data-crop="Tomato" onclick="acSelectCrop('Tomato')">
+            <i class="fa-solid fa-seedling"></i>
+            <span class="crop-name">Tomato</span>
+          </div>
+          <div class="crop-card" data-crop="Wheat" onclick="acSelectCrop('Wheat')">
+            <i class="fa-solid fa-wheat-awn"></i>
+            <span class="crop-name">Wheat</span>
+          </div>
+          <div class="crop-card" data-crop="Rice" onclick="acSelectCrop('Rice')">
+            <i class="fa-solid fa-bowl-rice"></i>
+            <span class="crop-name">Rice</span>
+          </div>
+          <div class="crop-card" data-crop="Potato" onclick="acSelectCrop('Potato')">
+            <i class="fa-solid fa-cubes-stacked"></i>
+            <span class="crop-name">Potato</span>
+          </div>
+          <div class="crop-card" data-crop="Onion" onclick="acSelectCrop('Onion')">
+            <i class="fa-solid fa-circle-dot"></i>
+            <span class="crop-name">Onion</span>
+          </div>
+          <div class="crop-card" data-crop="Spinach" onclick="acSelectCrop('Spinach')">
+            <i class="fa-solid fa-leaf"></i>
+            <span class="crop-name">Spinach</span>
+          </div>
+          <div class="crop-card" data-crop="Mango" onclick="acSelectCrop('Mango')">
+            <i class="fa-solid fa-tree"></i>
+            <span class="crop-name">Mango</span>
+          </div>
+          <div class="crop-card" data-crop="Mustard" onclick="acSelectCrop('Mustard')">
+            <i class="fa-solid fa-spa"></i>
+            <span class="crop-name">Mustard</span>
+          </div>
         </div>
-        <label data-i18n="harvest_window">Sell within how many days?</label>
-        <div class="stepper">
-          <button onclick="acStepDays(-1)">−</button>
-          <input type="number" id="harvestWindow" value="3">
-          <button onclick="acStepDays(1)">+</button>
+        <input type="hidden" id="cropType" value="Tomato">
+
+        <div class="field-row">
+          <div>
+            <label data-i18n="variety">Variety (optional)</label>
+            <input type="text" id="variety" placeholder="e.g. Standard, Hybrid">
+          </div>
+          <div>
+            <label data-i18n="harvest_window">Days Until Sold</label>
+            <div class="stepper">
+              <button type="button" onclick="acStepDays(-1)">−</button>
+              <input type="number" id="harvestWindow" value="3" readonly>
+              <button type="button" onclick="acStepDays(1)">+</button>
+            </div>
+          </div>
         </div>
 
-        <hr style="margin:20px 0;border:0;border-top:1px solid #ddd;">
+        <label data-i18n="quantity_kg">Quantity (kg) <span style="font-weight:400;font-size:12px;color:var(--ink-soft);">(Use stepper or click mic to speak)</span></label>
+        <div class="stepper-wrap">
+          <div class="stepper">
+            <button type="button" onclick="acStepQty(-50)">−</button>
+            <input type="number" id="quantity" value="100">
+            <button type="button" onclick="acStepQty(50)">+</button>
+          </div>
+          <button type="button" class="mic-fill-btn" id="micQtyBtn" onclick="acVoiceFillQuantity()" title="Speak number (e.g. 500)">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+        </div>
+        <div id="voiceFeedback" style="font-size:12px;color:var(--green-700);margin-top:4px;font-weight:600;min-height:16px;"></div>
 
-        <label data-i18n="need_transport">Do you need transportation to the centre?</label>
+        <hr style="margin:20px 0;border:0;border-top:1px solid var(--border-subtle);">
+
+        <label data-i18n="need_transport">Do you need transportation pickup to the centre?</label>
         <div class="icon-choices" id="transportChoices">
-          <div class="icon-choice selected" data-val="no"><span class="icon"><i class="fa-solid fa-tractor" aria-label="self transport"></i></span><span data-i18n="self_transport">Self Transport</span></div>
-          <div class="icon-choice" data-val="yes"><span class="icon"><i class="fa-solid fa-truck" aria-label="request pickup"></i></span><span data-i18n="request_pickup">Request Pickup</span></div>
+          <div class="icon-choice selected" data-val="no">
+            <span class="icon"><i class="fa-solid fa-tractor" aria-label="self transport"></i></span>
+            <span data-i18n="self_transport">Self Transport</span>
+          </div>
+          <div class="icon-choice" data-val="yes">
+            <span class="icon"><i class="fa-solid fa-truck" aria-label="request pickup"></i></span>
+            <span data-i18n="request_pickup">Request Pickup</span>
+          </div>
         </div>
         <div id="transportDetails" class="hidden" style="margin-top:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <label style="margin:0;">Pickup Location / Address</label>
-            <a href="javascript:void(0)" onclick="acUseCurrentLocation()" style="font-size:13px;font-weight:700;color:var(--green-700);text-decoration:underline;" data-i18n="use_current_location"><i class="fa-solid fa-location-dot" aria-label="location"></i> Use Current Location</a>
+            <a href="javascript:void(0)" onclick="acUseCurrentLocation()" style="font-size:13px;font-weight:700;color:var(--green-700);text-decoration:underline;" data-i18n="use_current_location">
+              <i class="fa-solid fa-location-dot" aria-label="location"></i> Use Profile Location
+            </a>
           </div>
           <input type="text" id="pickupAddress" placeholder="e.g. Farm 4, Sansarpur Village">
         </div>
@@ -98,22 +166,26 @@
     <div id="stepConfirm" class="hidden center-text">
       <div class="card">
         <div class="big-check" id="confirmIcon"><i class="fa-solid fa-circle-check" aria-label="success"></i></div>
-        <h2 id="confirmTitle" data-i18n="booking_confirmed">Booking Confirmed!</h2>
+        <h2 id="confirmTitle" data-i18n="booking_confirmed" style="margin:10px 0;">Booking Confirmed!</h2>
+        <p class="muted" style="margin:0 0 16px;">We have reserved your slot. An SMS alert will be sent before arrival.</p>
+        
         <div id="tokenBlock">
           <div class="muted" data-i18n="your_token">Your Token Number</div>
           <div class="token-big" id="tokenValue">#0</div>
         </div>
-        <div id="transportStatusCard" class="card hidden" style="background:var(--gold-100);border:1px solid var(--gold-500);margin-top:12px;">
+        
+        <div id="transportStatusCard" class="card hidden" style="background:var(--gold-100);border:1px solid var(--gold-500);margin-top:14px;text-align:left;">
           <strong><i class="fa-solid fa-truck" aria-label="transport request"></i> Transport Request Sent!</strong>
-          <div class="muted" style="font-size:13px;margin-top:4px;">An admin will assign a pickup vehicle shortly. SMS notification will be sent.</div>
+          <div class="muted" style="font-size:13px;margin-top:4px;">An admin will assign a pickup vehicle shortly. SMS notification will be sent to your phone.</div>
         </div>
+        
         <div class="qr-box"><img id="qrImg" width="160" height="160" alt="QR"></div>
         <div class="muted" id="confirmDetails"></div>
       </div>
       <a class="btn btn-outline" id="waLink" target="_blank" style="margin-bottom:10px; text-decoration:none;">
-        <i class="fa-solid fa-comments" aria-label="share whatsapp"></i> <span data-i18n="share_whatsapp">Share on WhatsApp</span>
+        <i class="fa-brands fa-whatsapp" aria-label="share whatsapp"></i> <span data-i18n="share_whatsapp">Share on WhatsApp</span>
       </a>
-      <button class="btn btn-primary" onclick="location.href='home.html'" data-i18n="go_home">Go to Home</button>
+      <button class="btn btn-primary" onclick="location.href='home.html'" data-i18n="go_home">Back to Home</button>
     </div>
   </div>
 </div>
@@ -123,8 +195,6 @@
 <script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
-<script src="js/voice.js"></script>
-<script src="js/voiceBooking.js"></script>
 <script src="js/book.js"></script>
 </body>
 </html>

@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgriConnect — My Bookings</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriConnect — My Bookings</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="back-row">
-      <button class="back-btn" onclick="acBookingsBack()">←</button>
-      <h1 data-i18n="my_bookings">My Bookings</h1>
+      <button class="back-btn" onclick="acBookingsBack()"><i class="fa-solid fa-arrow-left" aria-label="back"></i></button>
+      <div>
+        <h1 data-i18n="my_bookings">My Bookings</h1>
+        <div class="sub" data-i18n="app_name">AgriConnect</div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="voice-btn" onclick="acStartVoiceBooking()" title="Voice Assistant"><i class="fa-solid fa-microphone" aria-label="voice assistant"></i></button>
-      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+      <select class="lang-select" onchange="acSetLang(this.value)">
         <option value="en">English</option>
         <option value="hi">हिंदी</option>
         <option value="pa">ਪੰਜਾਬੀ</option>
@@ -30,7 +32,11 @@
 
     <!-- LIST VIEW -->
     <div id="listView">
-      <div id="bookingList"></div>
+      <div id="bookingList">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
     </div>
 
     <!-- DETAIL VIEW -->
@@ -38,28 +44,43 @@
       <div class="card" id="detailHeader"></div>
       <div class="card hidden" id="transportCard"></div>
       <div class="card">
-        <h3><i class="fa-solid fa-location-dot" aria-label="status"></i> Status</h3>
+        <h3><i class="fa-solid fa-location-dot" aria-label="status"></i> Status & Live Tracking</h3>
         <div class="timeline" id="timelineBox"></div>
       </div>
       <div class="card hidden" id="qualityCard"></div>
       <div class="card hidden" id="approvalCard"></div>
       <div class="card hidden" id="paymentCard"></div>
       <div class="card">
-        <h3><i class="fa-solid fa-bell" aria-label="updates"></i> Updates</h3>
-        <div id="notifLog" class="muted" style="font-size:13px"></div>
+        <h3><i class="fa-solid fa-bell" aria-label="updates"></i> SMS & Dispatch Updates</h3>
+        <div id="notifLog" class="muted" style="font-size:13.5px"></div>
       </div>
       <button class="btn btn-danger hidden" id="cancelBtn" onclick="cancelCurrentBooking()">
-        <i class="fa-solid fa-ban" aria-label="cancel"></i> <span data-i18n="cancel_booking">Cancel Booking</span>
+        <i class="fa-solid fa-ban" aria-label="cancel"></i> <span data-i18n="cancel_booking">Cancel Delivery Slot</span>
       </button>
     </div>
   </div>
 
   <div class="bottom-nav">
-    <a class="nav-item" href="home.html"><span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span><span data-i18n="welcome">Home</span></a>
-    <a class="nav-item active" href="bookings.html"><span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span><span data-i18n="my_bookings">Bookings</span></a>
-    <a class="nav-item" href="group.html"><span class="nav-icon"><i class="fa-solid fa-handshake" aria-label="group"></i></span><span data-i18n="my_group">Group</span></a>
-    <a class="nav-item" href="grievance.html"><span class="nav-icon"><i class="fa-solid fa-bell" aria-label="help"></i></span><span data-i18n="grievance">Help</span></a>
-    <a class="nav-item" href="profile.html"><span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span><span data-i18n="profile">Profile</span></a>
+    <a class="nav-item" href="home.html">
+      <span class="nav-icon"><i class="fa-solid fa-house" aria-label="home"></i></span>
+      <span data-i18n="welcome">Home</span>
+    </a>
+    <a class="nav-item active" href="bookings.html">
+      <span class="nav-icon"><i class="fa-solid fa-clipboard-list" aria-label="bookings"></i></span>
+      <span data-i18n="my_bookings">Bookings</span>
+    </a>
+    <a class="nav-item" href="group.html">
+      <span class="nav-icon"><i class="fa-solid fa-handshake" aria-label="group"></i></span>
+      <span data-i18n="my_group">Group</span>
+    </a>
+    <a class="nav-item" href="grievance.html">
+      <span class="nav-icon"><i class="fa-solid fa-bell" aria-label="help"></i></span>
+      <span data-i18n="grievance">Help</span>
+    </a>
+    <a class="nav-item" href="profile.html">
+      <span class="nav-icon"><i class="fa-solid fa-user" aria-label="profile"></i></span>
+      <span data-i18n="profile">Profile</span>
+    </a>
   </div>
 </div>
 
@@ -67,8 +88,6 @@
 <script src="js/config.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/api.js"></script>
-<script src="js/voice.js"></script>
-<script src="js/voiceBooking.js"></script>
 <script src="js/status.js"></script>
 <script src="js/bookings.js"></script>
 </body>
