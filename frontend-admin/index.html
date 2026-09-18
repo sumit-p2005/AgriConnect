@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect — Admin</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-box">
+    <h1>AgriConnect</h1>
+    <div class="sub">Control Room — Officer Login</div>
+    <div id="errorBox" class="error-box hidden"></div>
+    <label>Phone / ID</label>
+    <input type="text" id="phone" placeholder="9000000001">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="admin123">
+    <button class="btn btn-primary" onclick="doLogin()">Login</button>
+    <div class="hint">
+      Demo logins:<br>
+      Centre staff — 9000000001 / admin123<br>
+      District supervisor — 9000000002 / admin123
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => { if (adToken()) location.href = "dashboard.html"; });
+async function doLogin() {
+  const phone = document.getElementById("phone").value.trim();
+  const password = document.getElementById("password").value;
+  try {
+    const res = await adHttp.post("/auth/admin/login", { phone, password });
+    adSetSession(res.data.token, res.data.admin);
+    location.href = "dashboard.html";
+  } catch (e) {
+    const box = document.getElementById("errorBox");
+    box.textContent = adErr(e); box.classList.remove("hidden");
+  }
+}
+</script>
+</body>
+</html>

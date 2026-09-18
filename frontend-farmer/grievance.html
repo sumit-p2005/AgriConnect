@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect — Report Problem</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="back-row">
+      <button class="back-btn" onclick="location.href='home.html'">←</button>
+      <h1 data-i18n="grievance">Report a Problem</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant">🎙️</button>
+      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <label data-i18n="grievance_type">What is the problem?</label>
+      <div class="icon-choices" id="typeChoices">
+        <div class="icon-choice" data-val="quality"><span class="icon">🔍</span><span data-i18n="grievance_quality">Quality grading</span></div>
+        <div class="icon-choice" data-val="payment"><span class="icon">💰</span><span data-i18n="grievance_payment">Payment delay</span></div>
+        <div class="icon-choice" data-val="other"><span class="icon">✏️</span><span data-i18n="grievance_other">Other</span></div>
+      </div>
+      <label data-i18n="describe_problem">Describe the problem</label>
+      <textarea id="grievanceDesc" rows="3"></textarea>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="submitGrievance()">📨 <span data-i18n="submit">Submit</span></button>
+    </div>
+    <h3 data-i18n="past_complaints" style="padding-left:4px">Past complaints</h3>
+    <div id="grievanceList"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/api.js"></script>
+<script src="js/voice.js"></script>
+<script>
+let gType = "quality";
+document.addEventListener("DOMContentLoaded", () => {
+  acRequireLogin();
+  document.querySelectorAll("#typeChoices .icon-choice").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll("#typeChoices .icon-choice").forEach(x => x.classList.remove("selected"));
+      el.classList.add("selected");
+      gType = el.dataset.val;
+    });
+  });
+  document.querySelector("#typeChoices .icon-choice").classList.add("selected");
+  renderList();
+});
+
+function gKey() { return `ac_grievances_${acFarmer()?.id}`; }
+function submitGrievance() {
+  const desc = document.getElementById("grievanceDesc").value.trim();
+  if (!desc) return;
+  const list = JSON.parse(localStorage.getItem(gKey()) || "[]");
+  list.unshift({ type: gType, desc, status: "open", at: new Date().toISOString() });
+  localStorage.setItem(gKey(), JSON.stringify(list));
+  document.getElementById("grievanceDesc").value = "";
+  renderList();
+}
+function renderList() {
+  const list = JSON.parse(localStorage.getItem(gKey()) || "[]");
+  const box = document.getElementById("grievanceList");
+  if (!list.length) { box.innerHTML = `<div class="card muted center-text">-</div>`; return; }
+  box.innerHTML = list.map(g => `
+    <div class="card">
+      <div style="font-weight:700">${g.type}</div>
+      <div class="muted">${g.desc}</div>
+      <span class="badge badge-gold">${g.status}</span>
+    </div>`).join("");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1 data-i18n="app_name">AgriConnect</h1>
+      <div class="sub" data-i18n="tagline">Your slot. Your turn. No waiting.</div>
+    </div>
+    <button class="lang-toggle" onclick="acToggleLang()">हिंदी</button>
+  </div>
+
+  <div class="content">
+    <div id="errorBox" class="error-box hidden"></div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="card">
+        <label data-i18n="phone">Phone number</label>
+        <input type="tel" id="loginPhone" placeholder="10-digit number">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="loginPassword">
+        <button class="btn btn-primary" style="margin-top:18px" onclick="doLogin()">
+          🔑 <span data-i18n="login">Login</span>
+        </button>
+      </div>
+      <button class="btn btn-ghost" onclick="showRegister()" data-i18n="register">New Farmer? Register</button>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" class="hidden">
+      <div class="card">
+        <label data-i18n="name">Full name</label>
+        <input type="text" id="regName">
+        <label data-i18n="phone">Phone number</label>
+        <input type="tel" id="regPhone">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="regPassword">
+        <div class="field-row">
+          <div>
+            <label data-i18n="village">Village</label>
+            <input type="text" id="regVillage">
+          </div>
+          <div>
+            <label data-i18n="district">District</label>
+            <input type="text" id="regDistrict">
+          </div>
+        </div>
+        <label data-i18n="state">State</label>
+        <input type="text" id="regState" value="Punjab">
+        <label data-i18n="primary_crop">Main crop you grow</label>
+        <input type="text" id="regCrop" placeholder="e.g. Wheat, Tomato">
+
+        <label data-i18n="storage">Where do you store your harvest?</label>
+        <div class="icon-choices" id="storageChoices">
+          <div class="icon-choice" data-val="none"><span class="icon">🚫</span><span data-i18n="storage_none">No storage</span></div>
+          <div class="icon-choice" data-val="short-term"><span class="icon">📦</span><span data-i18n="storage_short">Short-term</span></div>
+          <div class="icon-choice" data-val="long-term"><span class="icon">🏬</span><span data-i18n="storage_long">Long-term</span></div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:20px" onclick="doRegister()">
+          ✅ <span data-i18n="create_account">Create account</span>
+        </button>
+      </div>
+      <button class="btn btn-ghost" onclick="showLogin()" data-i18n="already_have_account">Already have an account? Login</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

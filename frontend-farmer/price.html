@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect — Today's Price</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="back-row">
+      <button class="back-btn" onclick="location.href='home.html'">←</button>
+      <h1 data-i18n="price_check">Today's Price</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant">🎙️</button>
+      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <label data-i18n="crop_type">Crop type</label>
+      <input type="text" id="priceCrop" placeholder="e.g. Wheat, Tomato">
+      <button class="btn btn-primary" style="margin-top:14px" onclick="checkPrice()">🔍 Check</button>
+    </div>
+    <div id="priceResult"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/api.js"></script>
+<script src="js/voice.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => { acRequireLogin(); });
+async function checkPrice() {
+  const crop = document.getElementById("priceCrop").value.trim();
+  const box = document.getElementById("priceResult");
+  if (!crop) return;
+  try {
+    const res = (await acHttp.get(`/farmer/price/${encodeURIComponent(crop)}`)).data;
+    box.innerHTML = `
+      <div class="card center-text">
+        <div class="muted">${t("todays_price_for")} ${res.crop}</div>
+        <div style="font-size:34px;font-weight:800;color:var(--green-700)">Rs.${res.pricePerQuintal}</div>
+        <div class="muted">${t("per_quintal")} · ${res.asOf}</div>
+      </div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="error-box">${acErrorMsg(e)}</div>`;
+  }
+}
+</script>
+</body>
+</html>

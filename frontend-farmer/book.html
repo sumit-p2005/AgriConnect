@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect — Book Slot</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="back-row">
+      <button class="back-btn" onclick="acBookBack()">←</button>
+      <div>
+        <h1 id="stepTitle" data-i18n="step_center">Choose Centre</h1>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="voice-btn" onclick="acStartVoiceBooking()" title="Start Voice Booking">🎙️</button>
+      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="progress-dots" id="progressDots">
+      <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div id="errorBox" class="error-box hidden"></div>
+
+    <!-- STEP 1: Centre + Map -->
+    <div id="step1">
+      <div class="card" style="padding:10px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--green-700)">🗺️ Nearest Centres (Live Map)</div>
+        <div id="mapContainer"></div>
+      </div>
+      <div id="centerList"></div>
+    </div>
+
+    <!-- STEP 2: Date -->
+    <div id="step2" class="hidden">
+      <div id="dateList"></div>
+    </div>
+
+    <!-- STEP 3: Slot -->
+    <div id="step3" class="hidden">
+      <div id="slotList"></div>
+    </div>
+
+    <!-- STEP 4: Crop details & Transportation -->
+    <div id="step4" class="hidden">
+      <div class="card">
+        <label data-i18n="crop_type">Crop type</label>
+        <input type="text" id="cropType" placeholder="e.g. Tomato, Wheat">
+        <label data-i18n="variety">Variety (optional)</label>
+        <input type="text" id="variety">
+        <label data-i18n="quantity_kg">Quantity (kg)</label>
+        <div class="stepper">
+          <button onclick="acStepQty(-50)">−</button>
+          <input type="number" id="quantity" value="100">
+          <button onclick="acStepQty(50)">+</button>
+        </div>
+        <label data-i18n="harvest_window">Sell within how many days?</label>
+        <div class="stepper">
+          <button onclick="acStepDays(-1)">−</button>
+          <input type="number" id="harvestWindow" value="3">
+          <button onclick="acStepDays(1)">+</button>
+        </div>
+
+        <hr style="margin:20px 0;border:0;border-top:1px solid #ddd;">
+
+        <label data-i18n="need_transport">Do you need transportation to the centre?</label>
+        <div class="icon-choices" id="transportChoices">
+          <div class="icon-choice selected" data-val="no"><span class="icon">🚜</span><span data-i18n="self_transport">Self Transport</span></div>
+          <div class="icon-choice" data-val="yes"><span class="icon">🚛</span><span data-i18n="request_pickup">Request Pickup</span></div>
+        </div>
+        <div id="transportDetails" class="hidden" style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label style="margin:0;">Pickup Location / Address</label>
+            <a href="javascript:void(0)" onclick="acUseCurrentLocation()" style="font-size:13px;font-weight:700;color:var(--green-700);text-decoration:underline;" data-i18n="use_current_location">📍 Use Current Location</a>
+          </div>
+          <input type="text" id="pickupAddress" placeholder="e.g. Farm 4, Sansarpur Village">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="submitBooking()">
+        ✅ <span data-i18n="confirm_booking">Confirm Booking</span>
+      </button>
+    </div>
+
+    <!-- CONFIRMATION -->
+    <div id="stepConfirm" class="hidden center-text">
+      <div class="card">
+        <div class="big-check" id="confirmIcon">✅</div>
+        <h2 id="confirmTitle" data-i18n="booking_confirmed">Booking Confirmed!</h2>
+        <div id="tokenBlock">
+          <div class="muted" data-i18n="your_token">Your Token Number</div>
+          <div class="token-big" id="tokenValue">#0</div>
+        </div>
+        <div id="transportStatusCard" class="card hidden" style="background:var(--gold-100);border:1px solid var(--gold-500);margin-top:12px;">
+          <strong>🚛 Transport Request Sent!</strong>
+          <div class="muted" style="font-size:13px;margin-top:4px;">An admin will assign a pickup vehicle shortly. SMS notification will be sent.</div>
+        </div>
+        <div class="qr-box"><img id="qrImg" width="160" height="160" alt="QR"></div>
+        <div class="muted" id="confirmDetails"></div>
+      </div>
+      <a class="btn btn-outline" id="waLink" target="_blank" style="margin-bottom:10px; text-decoration:none;">
+        💬 <span data-i18n="share_whatsapp">Share on WhatsApp</span>
+      </a>
+      <button class="btn btn-primary" onclick="location.href='home.html'" data-i18n="go_home">Go to Home</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/api.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/voiceBooking.js"></script>
+<script src="js/book.js"></script>
+</body>
+</html>

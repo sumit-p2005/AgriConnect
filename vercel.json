@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/farmer/(.*)",
+      "destination": "/frontend-farmer/$1"
+    },
+    {
+      "source": "/farmer",
+      "destination": "/frontend-farmer/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/frontend-admin/$1"
+    },
+    {
+      "source": "/admin",
+      "destination": "/frontend-admin/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index.js"
+    }
+  ]
+}

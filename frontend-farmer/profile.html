@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriConnect — Profile</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="back-row">
+      <button class="back-btn" onclick="location.href='home.html'">←</button>
+      <h1 data-i18n="profile">Profile</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="voice-btn" onclick="acInitVoice()" title="Voice Assistant">🎙️</button>
+      <select class="lang-select" onchange="acSetLang(this.value)" style="background:#166534;color:white;border:1px solid #22c55e;border-radius:8px;padding:4px 8px;font-weight:600;font-size:13px;cursor:pointer;">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="pa">ਪੰਜਾਬੀ</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </div>
+  <div class="content" id="profileContent">
+    <div class="card muted center-text" data-i18n="loading">Loading...</div>
+  </div>
+  <div class="bottom-nav">
+    <a class="nav-item" href="home.html"><span class="nav-icon">🏠</span><span data-i18n="welcome">Home</span></a>
+    <a class="nav-item" href="bookings.html"><span class="nav-icon">📋</span><span data-i18n="my_bookings">Bookings</span></a>
+    <a class="nav-item" href="group.html"><span class="nav-icon">🤝</span><span data-i18n="my_group">Group</span></a>
+    <a class="nav-item" href="grievance.html"><span class="nav-icon">🛎️</span><span data-i18n="grievance">Help</span></a>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span><span data-i18n="profile">Profile</span></a>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.2/axios.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/api.js"></script>
+<script src="js/voice.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  acRequireLogin();
+  try {
+    const res = await acHttp.get("/farmer/profile");
+    const f = res.data;
+    if (!f) {
+      acLogout();
+      return;
+    }
+    document.getElementById("profileContent").innerHTML = `
+      <div class="card center-text">
+        <div style="font-size:44px">🧑‍🌾</div>
+        <h2 style="margin:6px 0 0">${f.name || "Farmer"}</h2>
+        <div class="muted">${f.phone || ""}</div>
+      </div>
+      <div class="card">
+        <div><b>${t("village")}:</b> ${f.village || "-"}</div>
+        <div><b>${t("district")}:</b> ${f.district || "-"}</div>
+        <div><b>${t("state")}:</b> ${f.state || "-"}</div>
+        <div><b>${t("primary_crop")}:</b> ${f.primaryCrop || "-"}</div>
+        <div><b>${t("storage")}:</b> ${f.storageCapability || "none"}</div>
+      </div>
+      <div class="card">
+        <h3>🏅 ${t("reputation")}</h3>
+        <div class="badge badge-green">${f.reputationScore ?? 80}/100</div>
+        <div class="muted" style="margin-top:8px">${t("on_time")}: ${f.onTimeArrivals ?? 0}/${f.totalArrivals ?? 0}</div>
+      </div>
+      <button class="btn btn-danger" onclick="acLogout()">🚪 ${t("logout")}</button>
+    `;
+  } catch (e) {
+    document.getElementById("profileContent").innerHTML = `<div class="error-box">${acErrorMsg(e)}</div>`;
+  }
+});
+</script>
+</body>
+</html>
