@@ -10,9 +10,27 @@ const { sendSms } = require("../services/smsService");
  * Manages Farmer Link collective selling and AI bulk pooling.
  */
 
+async function getAuthenticatedFarmer(req) {
+  if (!req.user) return null;
+  let farmer = null;
+  const farmerId = req.user.id || req.user._id;
+  if (farmerId) {
+    try {
+      farmer = await Farmer.findById(farmerId);
+    } catch (_) {}
+  }
+  if (!farmer && req.user.phone) {
+    farmer = await Farmer.findOne({ phone: req.user.phone });
+  }
+  return farmer;
+}
+
 exports.getMyGroup = async (req, res) => {
   try {
-    const lot = await BulkLot.findOne({ "members.farmerId": req.user.id })
+    const farmer = await getAuthenticatedFarmer(req);
+    const farmerId = farmer ? farmer._id : req.user.id;
+
+    const lot = await BulkLot.findOne({ "members.farmerId": farmerId })
       .populate("members.farmerId", "name phone village district location")
       .sort({ createdAt: -1 });
 
@@ -27,14 +45,14 @@ exports.getMyGroup = async (req, res) => {
 
 exports.getNearbyPoolOpportunities = async (req, res) => {
   try {
-    const farmer = await Farmer.findById(req.user.id);
+    const farmer = await getAuthenticatedFarmer(req);
     if (!farmer) return res.status(401).json({ error: "Farmer not found" });
 
     const farmerLoc = farmer.location || { lat: 31.25, lng: 75.70 };
 
     // Find all active unpooled bookings from other farmers
     const unpooledBookings = await Booking.find({
-      farmerId: { $ne: req.user.id },
+      farmerId: { $ne: farmer._id },
       status: { $in: ["confirmed", "waitlisted"] },
       bulkLotId: null
     }).populate("farmerId", "name village district location phone");
@@ -97,12 +115,12 @@ exports.getNearbyPoolOpportunities = async (req, res) => {
 
 exports.triggerAutoPool = async (req, res) => {
   try {
-    const farmer = await Farmer.findById(req.user.id);
+    const farmer = await getAuthenticatedFarmer(req);
     if (!farmer) return res.status(401).json({ error: "Farmer not found" });
 
     // Check if farmer has any unpooled active booking
     const myBookings = await Booking.find({
-      farmerId: req.user.id,
+      farmerId: farmer._id,
       status: { $in: ["confirmed", "waitlisted"] },
       bulkLotId: null
     });
@@ -111,7 +129,7 @@ exports.triggerAutoPool = async (req, res) => {
       // If no unpooled booking, check primary crop
       const cropToCluster = req.body.cropType || farmer.primaryCrop || "Wheat";
       const created = await autoClusterForCrop(cropToCluster, { Booking, BulkLot, Crop, Farmer }, null, sendSms);
-      const myLot = await BulkLot.findOne({ "members.farmerId": req.user.id })
+      const myLot = await BulkLot.findOne({ "members.farmerId": farmer._id })
         .populate("members.farmerId", "name phone village district");
       return res.json({ success: true, lot: myLot, lotsCreated: created ? created.length : 0 });
     }
@@ -122,7 +140,7 @@ exports.triggerAutoPool = async (req, res) => {
       if (created) lotsFormed += created.length;
     }
 
-    const myLot = await BulkLot.findOne({ "members.farmerId": req.user.id })
+    const myLot = await BulkLot.findOne({ "members.farmerId": farmer._id })
       .populate("members.farmerId", "name phone village district");
 
     res.json({

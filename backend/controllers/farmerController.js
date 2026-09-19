@@ -14,6 +14,21 @@ const { sendSms } = require("../services/smsService");
  * Farmer Controller (MVC)
  */
 
+async function getAuthenticatedFarmer(req) {
+  if (!req.user) return null;
+  let farmer = null;
+  const farmerId = req.user.id || req.user._id;
+  if (farmerId) {
+    try {
+      farmer = await Farmer.findById(farmerId);
+    } catch (_) {}
+  }
+  if (!farmer && req.user.phone) {
+    farmer = await Farmer.findOne({ phone: req.user.phone });
+  }
+  return farmer;
+}
+
 exports.getCrops = async (req, res) => {
   try {
     const crops = await Crop.find().sort({ name: 1 });
@@ -64,7 +79,29 @@ exports.getCenterSlots = async (req, res) => {
   try {
     const { date } = req.query;
     if (!date) return res.status(400).json({ error: "date query param required (YYYY-MM-DD)." });
-    const slots = await Slot.find({ centerId: req.params.id, date, status: "open" }).sort({ startTime: 1 });
+    
+    let slots = await Slot.find({ centerId: req.params.id, date, status: "open" }).sort({ startTime: 1 });
+    
+    // If no slots exist for this date & center, auto-create the standard daytime window slots
+    if (slots.length === 0) {
+      const center = await Center.findById(req.params.id);
+      if (center) {
+        const newSlots = [];
+        for (let h = 6; h < 18; h += 2) {
+          newSlots.push({
+            centerId: center._id,
+            date,
+            startTime: `${String(h).padStart(2, "0")}:00`,
+            endTime: `${String(h + 2).padStart(2, "0")}:00`,
+            capacity: 5,
+            bookedCount: 0,
+            status: "open"
+          });
+        }
+        slots = await Slot.insertMany(newSlots);
+      }
+    }
+
     res.json(slots.map(s => ({
       id: s._id,
       startTime: s.startTime,
@@ -103,25 +140,32 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ error: "Centre, slot, crop, and quantity are required." });
     }
 
-    const farmer = await Farmer.findById(req.user.id);
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) {
+      return res.status(401).json({ error: "Farmer account session invalid. Please log in again." });
+    }
+
     const center = await Center.findById(centerId);
     if (!center) return res.status(404).json({ error: "Procurement centre not found." });
+
+    const slot = await Slot.findById(slotId);
+    if (!slot) return res.status(404).json({ error: "Delivery slot not found or expired." });
 
     // Deduplication check (within last 10 seconds)
     const tenSecondsAgo = new Date(Date.now() - 10000);
     const existing = await Booking.findOne({
-      farmerId: req.user.id,
+      farmerId: farmer._id,
       centerId,
       slotId,
-      cropType: new RegExp(`^${cropType}$`, "i"),
-      quantity,
+      cropType: new RegExp(`^${cropType.trim()}$`, "i"),
+      quantity: Number(quantity),
       createdAt: { $gte: tenSecondsAgo }
     });
     if (existing) {
       return res.json(existing);
     }
 
-    const crop = await Crop.findOne({ name: new RegExp(`^${cropType}$`, "i") });
+    const crop = await Crop.findOne({ name: new RegExp(`^${cropType.trim()}$`, "i") });
 
     const claimed = await Slot.findOneAndUpdate(
       { _id: slotId, $expr: { $lt: ["$bookedCount", "$capacity"] } },
@@ -131,20 +175,24 @@ exports.createBooking = async (req, res) => {
     const status = claimed ? "confirmed" : "waitlisted";
 
     const { score, breakdown } = calculatePriorityScore(
-      { quantity, harvestWindowDays, storageCapability },
+      {
+        quantity: Number(quantity),
+        harvestWindowDays: Number(harvestWindowDays) || 3,
+        storageCapability: storageCapability || farmer.storageCapability || "none"
+      },
       crop,
       center,
-      cropType
+      cropType.trim()
     );
 
     const booking = await Booking.create({
       farmerId: farmer._id,
       centerId,
       slotId,
-      cropType,
+      cropType: cropType.trim(),
       variety: variety || "Standard",
-      quantity,
-      harvestWindowDays: harvestWindowDays || 3,
+      quantity: Number(quantity),
+      harvestWindowDays: Number(harvestWindowDays) || 3,
       storageCapability: storageCapability || farmer.storageCapability || "none",
       priorityScore: score,
       scoreBreakdown: breakdown,
@@ -156,14 +204,16 @@ exports.createBooking = async (req, res) => {
 
     // Auto-Clustering evaluation in real-time
     try {
-      await autoClusterForCrop(cropType, { Booking, BulkLot, Crop, Farmer }, null, sendSms);
+      await autoClusterForCrop(cropType.trim(), { Booking, BulkLot, Crop, Farmer }, null, sendSms);
     } catch (clusterErr) {
       console.warn("Auto-cluster warning on booking:", clusterErr);
     }
 
     // SMS Dispatch
-    const smsText = `AgriConnect: Booking confirmed for ${cropType} (${quantity}kg) at ${center.name}. Status: ${status}.`;
-    await sendSms(farmer.phone, smsText);
+    if (farmer.phone) {
+      const smsText = `AgriConnect: Booking confirmed for ${cropType.trim()} (${quantity}kg) at ${center.name}. Status: ${status}.`;
+      await sendSms(farmer.phone, smsText);
+    }
 
     res.json(booking);
   } catch (err) {
@@ -173,7 +223,10 @@ exports.createBooking = async (req, res) => {
 
 exports.getFarmerBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ farmerId: req.user.id })
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) return res.status(401).json({ error: "Farmer not found" });
+
+    const bookings = await Booking.find({ farmerId: farmer._id })
       .populate("centerId", "name address location")
       .populate("slotId", "date startTime endTime")
       .sort({ createdAt: -1 });
@@ -185,7 +238,10 @@ exports.getFarmerBookings = async (req, res) => {
 
 exports.getBookingById = async (req, res) => {
   try {
-    const booking = await Booking.findOne({ _id: req.params.id, farmerId: req.user.id })
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) return res.status(401).json({ error: "Farmer not found" });
+
+    const booking = await Booking.findOne({ _id: req.params.id, farmerId: farmer._id })
       .populate("centerId", "name address location")
       .populate("slotId", "date startTime endTime");
     if (!booking) return res.status(404).json({ error: "Booking not found." });
@@ -197,7 +253,10 @@ exports.getBookingById = async (req, res) => {
 
 exports.cancelBooking = async (req, res) => {
   try {
-    const booking = await Booking.findOne({ _id: req.params.id, farmerId: req.user.id });
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) return res.status(401).json({ error: "Farmer not found" });
+
+    const booking = await Booking.findOne({ _id: req.params.id, farmerId: farmer._id });
     if (!booking) return res.status(404).json({ error: "Booking not found." });
 
     if (["arrived", "quality_check", "approved", "paid", "completed"].includes(booking.status)) {
@@ -229,10 +288,12 @@ exports.cancelBooking = async (req, res) => {
 exports.createTransportRequest = async (req, res) => {
   try {
     const { bookingId, pickupLocation, estimatedWeightKg } = req.body;
-    const booking = await Booking.findOne({ _id: bookingId, farmerId: req.user.id });
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) return res.status(401).json({ error: "Farmer not found" });
+
+    const booking = await Booking.findOne({ _id: bookingId, farmerId: farmer._id });
     if (!booking) return res.status(404).json({ error: "Booking not found." });
 
-    const farmer = await Farmer.findById(req.user.id);
     const partners = await TransportPartner.find({ active: true });
     let assignedPartner = null;
 
@@ -242,12 +303,12 @@ exports.createTransportRequest = async (req, res) => {
       assignedPartner = partners.map(p => ({
         partner: p,
         dist: haversineDistance(lat, lng, p.baseLocation?.lat || 31.25, p.baseLocation?.lng || 75.70)
-      })).sort((a, b) => a.dist - b.dist)[0].partner;
+      })).sort((a, b) => a.dist - b.dist)[0]?.partner;
     }
 
     const reqDoc = await TransportRequest.create({
       bookingId,
-      farmerId: req.user.id,
+      farmerId: farmer._id,
       centerId: booking.centerId,
       pickupLocation: pickupLocation || { lat: 31.25, lng: 75.70, address: "Farm Location" },
       estimatedWeightKg: estimatedWeightKg || booking.quantity,
@@ -255,8 +316,10 @@ exports.createTransportRequest = async (req, res) => {
       status: assignedPartner ? "assigned" : "requested"
     });
 
-    const msg = `AgriConnect: Transport pickup scheduled for ${booking.cropType} (${booking.quantity}kg).`;
-    await sendSms(farmer.phone, msg);
+    if (farmer.phone) {
+      const msg = `AgriConnect: Transport pickup scheduled for ${booking.cropType} (${booking.quantity}kg).`;
+      await sendSms(farmer.phone, msg);
+    }
 
     res.json(reqDoc);
   } catch (err) {
@@ -266,7 +329,10 @@ exports.createTransportRequest = async (req, res) => {
 
 exports.getBookingTransport = async (req, res) => {
   try {
-    const reqDoc = await TransportRequest.findOne({ bookingId: req.params.id, farmerId: req.user.id })
+    const farmer = await getAuthenticatedFarmer(req);
+    if (!farmer) return res.status(401).json({ error: "Farmer not found" });
+
+    const reqDoc = await TransportRequest.findOne({ bookingId: req.params.id, farmerId: farmer._id })
       .populate("assignedPartnerId");
     res.json(reqDoc);
   } catch (err) {
@@ -276,7 +342,7 @@ exports.getBookingTransport = async (req, res) => {
 
 exports.getFarmerProfile = async (req, res) => {
   try {
-    const farmer = await Farmer.findById(req.user.id).select("-passwordHash");
+    const farmer = await getAuthenticatedFarmer(req);
     if (!farmer) return res.status(401).json({ error: "Farmer profile not found." });
     res.json(farmer);
   } catch (err) {

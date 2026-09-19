@@ -16,10 +16,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ensure DB connection for API requests (serverless friendly)
+// Ensure DB connection & seed check for API requests (serverless friendly)
+let seedPromise = null;
 app.use("/api", async (req, res, next) => {
   try {
     await connectDB();
+    if (!seedPromise) {
+      seedPromise = (async () => {
+        try {
+          const centerCount = await Center.countDocuments();
+          if (centerCount === 0) {
+            console.log("[db] Empty database detected. Auto-seeding initial reference and demo data...");
+            await seed();
+          }
+        } catch (e) {
+          console.error("[db] Seed check warning:", e.message);
+        }
+      })();
+    }
+    await seedPromise;
     next();
   } catch (e) {
     console.error("[db middleware error]:", e.message);
