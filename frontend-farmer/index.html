@@ -30,6 +30,19 @@
         <input type="tel" id="loginPhone" placeholder="10-digit number">
         <label data-i18n="password">Password</label>
         <input type="password" id="loginPassword">
+        
+        <!-- Captcha Security Check -->
+        <label style="margin-top:14px;"><i class="fa-solid fa-shield-halved"></i> Security Check</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div id="captchaSvgBox" style="min-width:140px;height:44px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" onclick="loadCaptcha()" title="Click to refresh">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+          </div>
+          <button type="button" class="btn-outline" style="width:44px;height:44px;min-height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;" onclick="loadCaptcha()" title="Refresh Captcha">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+        <input type="text" id="captchaAnswer" placeholder="Enter answer / characters above" autocomplete="off">
+
         <button class="btn btn-primary" style="margin-top:18px" onclick="doLogin()">
           <i class="fa-solid fa-key" aria-label="login"></i> <span data-i18n="login">Login</span>
         </button>

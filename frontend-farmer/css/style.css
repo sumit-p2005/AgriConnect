@@ -399,9 +399,22 @@ select option {
   margin-bottom: 6px;
   color: var(--green-800);
 }
+.crop-card .crop-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+.crop-card:hover .crop-img {
+  transform: scale(1.08);
+}
 .crop-card .crop-name {
   font-size: 13.5px;
   color: var(--ink);
+  font-weight: 600;
 }
 
 /* ---------- Stepper with Voice Fill ---------- */

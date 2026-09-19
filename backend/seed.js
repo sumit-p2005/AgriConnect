@@ -197,6 +197,12 @@ async function run() {
     await reorderSlotQueue(Booking, targetSlot._id);
   }
 
+  // Auto-cluster seeded bookings for Wheat and Tomato so demo farmers have active groups
+  console.log("[seed] forming initial Farmer Link bulk pools...");
+  const { autoClusterForCrop } = require("./services/clustering");
+  await autoClusterForCrop("Wheat", { Booking, BulkLot, Crop, Farmer }, null, null);
+  await autoClusterForCrop("Tomato", { Booking, BulkLot, Crop, Farmer }, null, null);
+
   console.log("[seed] done!");
   console.log("--------------------------------------------------");
   console.log("Admin logins:      9000000001 / admin123 (centre staff)");

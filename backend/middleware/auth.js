@@ -22,4 +22,4 @@ function requireAuth(role) {
   };
 }
 
-module.exports = { sign, requireAuth };
+module.exports = { sign, signToken: sign, requireAuth };

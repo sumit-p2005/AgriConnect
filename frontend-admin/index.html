@@ -17,7 +17,20 @@
     <input type="text" id="phone" placeholder="9000000001">
     <label>Password</label>
     <input type="password" id="password" placeholder="admin123">
-    <button class="btn btn-primary" onclick="doLogin()"><i class="fa-solid fa-key" aria-label="login"></i> Login</button>
+
+    <!-- Captcha Check -->
+    <label style="margin-top:12px;"><i class="fa-solid fa-shield-halved"></i> Security Captcha</label>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div id="adminCaptchaSvg" style="min-width:140px;height:44px;display:flex;align-items:center;justify-content:center;background:#0f172a;border-radius:6px;border:1px solid #334155;cursor:pointer;" onclick="loadAdminCaptcha()" title="Click to refresh">
+        <i class="fa-solid fa-spinner fa-spin text-muted"></i>
+      </div>
+      <button type="button" class="btn" style="height:44px;min-height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center;" onclick="loadAdminCaptcha()" title="Refresh Captcha">
+        <i class="fa-solid fa-arrows-rotate"></i>
+      </button>
+    </div>
+    <input type="text" id="adminCaptchaAnswer" placeholder="Enter answer / text above" autocomplete="off">
+
+    <button class="btn btn-primary" onclick="doLogin()" style="margin-top:16px;"><i class="fa-solid fa-key" aria-label="login"></i> Login</button>
     <div class="hint">
       Demo logins:<br>
       Centre staff — 9000000001 / admin123<br>
@@ -29,17 +42,63 @@
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => { if (adToken()) location.href = "dashboard.html"; });
+let adminCaptchaId = null;
+
+async function loadAdminCaptcha() {
+  const box = document.getElementById("adminCaptchaSvg");
+  if (!box) return;
+  box.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color:#38bdf8"></i>';
+  try {
+    const res = await adHttp.get("/auth/captcha");
+    adminCaptchaId = res.data.id;
+    box.innerHTML = res.data.svg;
+    const ansInput = document.getElementById("adminCaptchaAnswer");
+    if (ansInput) {
+      ansInput.value = "";
+      ansInput.placeholder = res.data.hint || "Enter answer";
+    }
+  } catch (e) {
+    box.innerHTML = '<span style="color:#f87171;font-size:12px;">Error loading</span>';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (adToken()) location.href = "dashboard.html";
+  loadAdminCaptcha();
+});
+
 async function doLogin() {
   const phone = document.getElementById("phone").value.trim();
   const password = document.getElementById("password").value;
+  const captchaAnswer = document.getElementById("adminCaptchaAnswer")?.value.trim();
+
+  if (!phone || !password) {
+    const box = document.getElementById("errorBox");
+    box.textContent = "Please enter Phone/ID and password.";
+    box.classList.remove("hidden");
+    return;
+  }
+  if (!captchaAnswer) {
+    const box = document.getElementById("errorBox");
+    box.textContent = "Please complete the Security Captcha.";
+    box.classList.remove("hidden");
+    return;
+  }
+
   try {
-    const res = await adHttp.post("/auth/admin/login", { phone, password });
+    const res = await adHttp.post("/auth/admin/login", {
+      phone,
+      password,
+      captchaId: adminCaptchaId,
+      captchaAnswer
+    });
     adSetSession(res.data.token, res.data.admin);
     location.href = "dashboard.html";
   } catch (e) {
     const box = document.getElementById("errorBox");
-    box.textContent = adErr(e); box.classList.remove("hidden");
+    box.textContent = adErr(e);
+    box.classList.remove("hidden");
+    loadAdminCaptcha(); // refresh captcha on error
   }
 }
 </script>

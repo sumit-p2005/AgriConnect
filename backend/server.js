@@ -9,13 +9,15 @@ const seed = require("./seed");
 const authRoutes = require("./routes/auth");
 const farmerRoutes = require("./routes/farmer");
 const adminRoutes = require("./routes/admin");
+const grievanceRoutes = require("./routes/grievance");
+const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Ensure DB connection for requests (serverless friendly)
-app.use(async (req, res, next) => {
+// Ensure DB connection for API requests (serverless friendly)
+app.use("/api", async (req, res, next) => {
   try {
     await connectDB();
     next();
@@ -26,10 +28,11 @@ app.use(async (req, res, next) => {
 });
 
 // API Routes
-app.get("/api/health", (req, res) => res.json({ ok: true, service: "AgriConnect API" }));
+app.get("/api/health", (req, res) => res.json({ ok: true, service: "AgriConnect API (MVC Restructured)" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/farmer", farmerRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/grievance", grievanceRoutes);
 
 // Static Frontends
 app.use("/farmer", express.static(path.join(__dirname, "../frontend-farmer")));
@@ -94,11 +97,8 @@ app.get("/", (req, res) => {
   `);
 });
 
-// Central error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Something went wrong on the server." });
-});
+// Centralized error handler
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
