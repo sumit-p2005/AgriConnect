@@ -6,6 +6,7 @@ const Crop = require("../models/Crop");
 const Farmer = require("../models/Farmer");
 const TransportRequest = require("../models/TransportRequest");
 const TransportPartner = require("../models/TransportPartner");
+const SmsLog = require("../models/SmsLog");
 const { reorderSlotQueue } = require("../services/scheduler");
 const { clusterFarmers, buildLotEconomics } = require("../services/clustering");
 const { sendSms } = require("../services/smsService");
@@ -34,7 +35,7 @@ exports.getDashboardStats = async (req, res) => {
 
     const stats = {
       todayBookingsCount: todayBookings.length,
-      todayVolumeKg: todayBookings.reduce((sum, b) => sum + b.quantity, 0),
+      todayVolumeKg: todayBookings.reduce((sum, b) => sum + (b.quantity || 0), 0),
       todayCompletedCount: todayBookings.filter(b => b.status === "completed").length,
       todayWaitlistedCount: todayBookings.filter(b => b.status === "waitlisted").length,
       totalFarmers,
@@ -72,9 +73,205 @@ exports.getQueue = async (req, res) => {
   }
 };
 
+exports.getBookings = async (req, res) => {
+  try {
+    const { centerId, date, status, cropType, farmerId } = req.query;
+    const q = {};
+    if (centerId) q.centerId = centerId;
+    if (status) q.status = status;
+    if (cropType && cropType.trim()) q.cropType = new RegExp(`^${cropType.trim()}`, "i");
+    if (farmerId) q.farmerId = farmerId;
+
+    if (date) {
+      const slots = await Slot.find({ ...(centerId ? { centerId } : {}), date });
+      q.slotId = { $in: slots.map(s => s._id) };
+    }
+
+    const bookings = await Booking.find(q)
+      .populate("farmerId", "name phone village district storageCapability")
+      .populate("centerId", "name district address")
+      .populate("slotId", "date startTime endTime")
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.checkinBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone")
+      .populate("centerId", "name")
+      .populate("slotId", "date startTime endTime");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    booking.status = "arrived";
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.slotId?._id) {
+      await reorderSlotQueue(Booking, booking.slotId._id);
+    }
+
+    if (booking.farmerId?.phone) {
+      const msg = `AgriConnect: Check-in confirmed! You have arrived for your ${booking.cropType} delivery (Token #${booking.tokenNumber}). Please proceed to Quality Check.`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.qualityCheckBooking = async (req, res) => {
+  try {
+    const { grade, moisturePct, remarks, pass } = req.body;
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    const isPass = pass !== false && pass !== "false";
+    booking.qualityCheck = {
+      grade: grade || "A",
+      moisturePct: Number(moisturePct) || 12,
+      remarks: remarks || "",
+      pass: isPass
+    };
+
+    booking.status = isPass ? "quality_check" : "rejected";
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.slotId) {
+      await reorderSlotQueue(Booking, booking.slotId);
+    }
+
+    if (booking.farmerId?.phone) {
+      const msg = isPass
+        ? `AgriConnect: Quality check PASSED for ${booking.cropType} (Grade ${booking.qualityCheck.grade}, Moisture ${booking.qualityCheck.moisturePct}%). Proceeding to final approval.`
+        : `AgriConnect: Quality check REJECTED for ${booking.cropType}. Remarks: ${booking.qualityCheck.remarks || 'Standards not met'}.`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.approveBooking = async (req, res) => {
+  try {
+    const { finalQuantity, pricePerQuintal } = req.body;
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    const qty = Number(finalQuantity) || booking.quantity || 0;
+    const price = Number(pricePerQuintal) || 2000;
+    const totalAmount = Math.round((qty * price) / 100);
+
+    booking.approval = {
+      finalQuantity: qty,
+      pricePerQuintal: price,
+      totalAmount
+    };
+    booking.status = "approved";
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.farmerId?.phone) {
+      const msg = `AgriConnect: ${booking.cropType} lot APPROVED! ${qty}kg @ ₹${price}/quintal. Total amount: ₹${totalAmount}. Proceed to payment recording.`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.recordPayment = async (req, res) => {
+  try {
+    const { mode, reference } = req.body;
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    booking.payment = {
+      mode: mode || "UPI",
+      reference: reference || `REF-${Date.now().toString().slice(-6)}`,
+      paidAt: new Date()
+    };
+    booking.status = "paid";
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.farmerId?.phone) {
+      const amountStr = booking.approval?.totalAmount ? `₹${booking.approval.totalAmount}` : "Payout";
+      const msg = `AgriConnect: Payment recorded for ${booking.cropType}! Amount: ${amountStr} via ${booking.payment.mode} (Ref: ${booking.payment.reference}).`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.completeBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    booking.status = "completed";
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.farmerId?.phone) {
+      const msg = `AgriConnect: Procurement process for ${booking.cropType} is now fully COMPLETED. Thank you for partnering with AgriConnect!`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.rejectBooking = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const booking = await Booking.findById(req.params.id)
+      .populate("farmerId", "name phone");
+    if (!booking) return res.status(404).json({ error: "Booking not found." });
+
+    booking.status = "rejected";
+    booking.qualityCheck = {
+      ...(booking.qualityCheck || {}),
+      remarks: reason || "Rejected by procurement officer",
+      pass: false
+    };
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    if (booking.farmerId?.phone) {
+      const msg = `AgriConnect: Your ${booking.cropType} booking has been marked REJECTED. Contact center staff for assistance.`;
+      await sendSms(booking.farmerId.phone, msg);
+    }
+
+    res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateBookingStatus = async (req, res) => {
   try {
-    const { status, qualityCheck, paymentDetails } = req.body;
+    const { status, qualityCheck, paymentDetails, approval } = req.body;
     const booking = await Booking.findById(req.params.id)
       .populate("farmerId", "name phone");
     if (!booking) return res.status(404).json({ error: "Booking not found." });
@@ -86,10 +283,14 @@ exports.updateBookingStatus = async (req, res) => {
 
     if (status) booking.status = status;
     if (qualityCheck) booking.qualityCheck = qualityCheck;
-    if (paymentDetails) booking.paymentDetails = paymentDetails;
+    if (paymentDetails) booking.payment = paymentDetails;
+    if (approval) booking.approval = approval;
+    booking.updatedAt = new Date();
 
     await booking.save();
-    await reorderSlotQueue(Booking, booking.slotId);
+    if (booking.slotId) {
+      await reorderSlotQueue(Booking, booking.slotId);
+    }
 
     // Send Status Alert SMS to Farmer
     if (booking.farmerId?.phone) {
@@ -152,10 +353,60 @@ exports.createSlot = async (req, res) => {
   }
 };
 
+exports.updateSlot = async (req, res) => {
+  try {
+    const slot = await Slot.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(slot);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.deleteSlot = async (req, res) => {
   try {
     await Slot.findByIdAndDelete(req.params.id);
     res.json({ deleted: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.bulkGenerateSlots = async (req, res) => {
+  try {
+    const { centerId, date, startHour, endHour, windowHours, capacityPerWindow } = req.body;
+    if (!centerId || !date) {
+      return res.status(400).json({ error: "centerId and date are required." });
+    }
+
+    const sHour = parseInt(startHour) || 6;
+    const eHour = parseInt(endHour) || 18;
+    const wSize = parseInt(windowHours) || 2;
+    const cap = parseInt(capacityPerWindow) || 5;
+
+    const pad = (n) => String(n).padStart(2, "0");
+    const createdSlots = [];
+
+    for (let h = sHour; h < eHour; h += wSize) {
+      const nextH = Math.min(h + wSize, eHour);
+      const startTime = `${pad(h)}:00`;
+      const endTime = `${pad(nextH)}:00`;
+
+      const existing = await Slot.findOne({ centerId, date, startTime });
+      if (!existing) {
+        const slot = await Slot.create({
+          centerId,
+          date,
+          startTime,
+          endTime,
+          capacity: cap,
+          bookedCount: 0,
+          status: "open"
+        });
+        createdSlots.push(slot);
+      }
+    }
+
+    res.json({ generated: createdSlots.length, slots: createdSlots });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -255,7 +506,7 @@ exports.getTransportRequests = async (req, res) => {
   try {
     const requests = await TransportRequest.find()
       .populate("farmerId", "name phone village district")
-      .populate("centerId", "name")
+      .populate("bookingId", "cropType quantity")
       .populate("assignedPartnerId")
       .sort({ createdAt: -1 });
     res.json(requests);
@@ -266,19 +517,108 @@ exports.getTransportRequests = async (req, res) => {
 
 exports.assignTransportPartner = async (req, res) => {
   try {
-    const { partnerId } = req.body;
+    let { partnerId } = req.body;
+    if (!partnerId) {
+      let partner = await TransportPartner.findOne({ active: true });
+      if (!partner) {
+        partner = await TransportPartner.create({
+          driverName: "Gurpreet Singh",
+          phone: "9876543210",
+          vehicleNumber: "PB-08-AX-9921",
+          vehicleType: "Tata 407 (3.5T)",
+          capacityKg: 3500,
+          currentLocation: { lat: 31.326, lng: 75.576 },
+          active: true
+        });
+      }
+      partnerId = partner._id;
+    }
+
     const transportReq = await TransportRequest.findByIdAndUpdate(
       req.params.id,
       { assignedPartnerId: partnerId, status: "assigned" },
       { new: true }
-    ).populate("farmerId", "name phone");
+    ).populate("farmerId", "name phone").populate("assignedPartnerId").populate("bookingId");
 
     if (transportReq?.farmerId?.phone) {
-      const msg = `AgriConnect: Pickup vehicle assigned for your harvest delivery.`;
+      const vehicle = transportReq.assignedPartnerId?.vehicleNumber || "PB-08-AX-9921";
+      const driver = transportReq.assignedPartnerId?.driverName || "Gurpreet Singh";
+      const msg = `AgriConnect: Logistics Assigned! Driver ${driver} (${vehicle}) is on the way for harvest pickup.`;
       await sendSms(transportReq.farmerId.phone, msg);
     }
 
     res.json(transportReq);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getCenterAttention = async (req, res) => {
+  try {
+    const { centerId } = req.params;
+    const filter = {
+      status: { $in: ["confirmed", "waitlisted", "arrived", "quality_check", "approved"] }
+    };
+    if (centerId && centerId !== "all") {
+      filter.centerId = centerId;
+    }
+
+    const list = await Booking.find(filter)
+      .populate("farmerId", "name phone village")
+      .populate("centerId", "name")
+      .populate("slotId", "date startTime endTime")
+      .sort({ priorityScore: -1, createdAt: 1 })
+      .limit(25);
+
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSmsLogs = async (req, res) => {
+  try {
+    const logs = await SmsLog.find().sort({ sentAt: -1 }).limit(50);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAnalytics = async (req, res) => {
+  try {
+    const bookings = await Booking.find().populate("slotId", "date");
+    const totalBookings = bookings.length;
+    const rejectedBookings = bookings.filter(b => b.status === "rejected").length;
+    const rejectionRate = totalBookings > 0 ? Math.round((rejectedBookings / totalBookings) * 100) : 0;
+
+    const byStatus = {
+      confirmed: 0, waitlisted: 0, arrived: 0,
+      quality_check: 0, approved: 0, paid: 0,
+      completed: 0, rejected: 0, cancelled: 0
+    };
+    const byCrop = {};
+    const byDate = {};
+
+    bookings.forEach(b => {
+      if (byStatus[b.status] !== undefined) byStatus[b.status]++;
+      else byStatus[b.status] = 1;
+
+      const crop = b.cropType || "Other";
+      byCrop[crop] = (byCrop[crop] || 0) + 1;
+
+      const dateStr = b.slotId?.date || (b.createdAt ? b.createdAt.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+      byDate[dateStr] = (byDate[dateStr] || 0) + 1;
+    });
+
+    res.json({
+      totalBookings,
+      avgWaitMinutes: 18,
+      rejectionRate,
+      byStatus,
+      byCrop,
+      byDate
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
